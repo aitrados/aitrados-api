@@ -39,7 +39,7 @@ class WebSocketClient(WebSocketClientMixin):
     ]
     def __init__(self,secret_key,
 
-                    is_re_subscribe:bool=False,
+                    is_re_subscribe:bool=True,
                     is_reconnect:bool=False,
                     handle_msg:Callable=None,
                     news_handle_msg:Callable=None,
@@ -117,7 +117,7 @@ class WebSocketClient(WebSocketClientMixin):
         subscribe_payload = {
             "message_type": "subscribe",
             "params": {
-                "subscribe_type": "ohlc",
+                "subscribe_type": "ohlc:1m",
                 "topics": topics
             }
         }
@@ -216,7 +216,7 @@ class WebSocketClient(WebSocketClientMixin):
                         await self.a_subscribe_news(*topics)
                     case "event":
                         await self.a_subscribe_event(*topics)
-    async def __connect(self):
+    async def __connect(self,is_reconnect=False):
 
         try:
             self.stop_event = asyncio.Event()
@@ -242,7 +242,8 @@ class WebSocketClient(WebSocketClientMixin):
                     if self.debug:
                         logger.success("--- ✅ Automatic authentication successful ---")
                     self.authorized = True
-                    await self.callback(self.auth_handle_msg,auth_response,auth_response)
+                    if  not (self.is_re_subscribe and is_reconnect):
+                        await self.callback(self.auth_handle_msg,auth_response,auth_response)
                     await self.resubscribe_all()
 
                     await self.__message_event()
@@ -273,10 +274,11 @@ class WebSocketClient(WebSocketClientMixin):
 
 
 
-    async def run_with_reconnect(self):
+    async def run_with_reconnect(self,is_reconnect=False):
+
         while not self.should_exit:
             try:
-                await self.__connect()
+                await self.__connect(is_reconnect)
             except Exception as e:
                 logger.error(f"Connection error occurred: {e}")
 
@@ -286,3 +288,4 @@ class WebSocketClient(WebSocketClientMixin):
                     if self.debug:
                         logger.info("Reconnecting...")
                     logger.info("*" * 50)
+            is_reconnect=True

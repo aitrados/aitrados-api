@@ -1,4 +1,4 @@
-from aitrados_api.common_lib.contant import SchemaAsset,SubscribeEndpoint,SubscribeEndpoint,ApiEndpoint
+from aitrados_api.common_lib.contant import SchemaAsset,SubscribeEndpoint,SubscribeEndpoint,ApiEndpoint,EcoEventPreviewIntervalName
 from aitrados_api.common_lib.http_api.config import ClientConfig, RateLimitConfig
 from aitrados_api.common_lib.http_api.data_client import  DatasetClient
 

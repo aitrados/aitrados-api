@@ -61,7 +61,7 @@ client = WebSocketClient(
     show_subscribe_handle_msg=show_subscribe_handle_msg,
     auth_handle_msg=auth_handle_msg,
     endpoint=SubscribeEndpoint.DELAYED,
-    debug=False
+    debug=True
 )
 
 

@@ -5,7 +5,7 @@ from aitrados_api.models.ohlc_model import OHLC_HISTORY_LIST_REQUEST_DATA, OHLC_
 
 class OhlcRequest(RequestBaseMixin):
 
-    def ohlcs(self, schema_asset, country_symbol, interval, from_date, to_date, format="json", limit=150):
+    def ohlcs(self, schema_asset, country_symbol, interval, from_date, to_date, format="json", limit=150,sort=None):
         """
         Function to request OHLC data from the API.
 
@@ -28,6 +28,7 @@ class OhlcRequest(RequestBaseMixin):
             "to_date": to_date,
             "format": format,
             "limit": limit,
+            "sort": sort
         }
 
         while True:

@@ -21,26 +21,27 @@ params = {
     "schema_asset": SchemaAsset.CRYPTO,
     "country_symbol": "GLOBAL:BTCUSD",
     "interval": "1m",
-    "from_date": "2025-07-18 00:00:00",
-    "to_date": "2025-09-05 23:59:59",
+    "from_date": "2025-07-18T00:00:00Z",
+    "to_date": "2025-09-05T23:59:59Z",
     "format": "json",
     "limit": 30
 }
 #***************************************OHLC DATA***************************#
-'''
+
 ## Get historical OHLC data
 for ohlc in client.ohlc.ohlcs(**params):
     print(ohlc)
+
+
 '''
-
-
 # Get latest OHLC data.use for real-time data
 ohlc_latest=client.ohlc.ohlcs_latest(**params)
 print(ohlc_latest)
-
-
-#***************************************symbol reference***************************#
 '''
+
+'''
+#***************************************symbol reference***************************#
+
 stock_reference=client.reference.reference(schema_asset=SchemaAsset.STOCK,country_symbol="US:TSLA")
 crypto_reference=client.reference.reference(schema_asset=SchemaAsset.CRYPTO,country_symbol="GLOBAL:BTCUSD")
 forex_reference=client.reference.reference(schema_asset=SchemaAsset.FOREX,country_symbol="GLOBAL:EURUSD")
@@ -57,31 +58,32 @@ for options in client.reference.search_option(schema_asset=SchemaAsset.STOCK,cou
 '''
 '''
 # Get options expiration date list
-expiration_date_list= client.reference.options_expiration_date_list(schema_asset=SchemaAsset.STOCK, country_symbol="US:SPY", limit=100, format="json")
+expiration_date_list= client.reference.options_expiration_date_list(schema_asset=SchemaAsset.STOCK, country_symbol="US:SPY")
+pass
 '''
-
 #***************************************stock corporate action***************************#
 '''
 # Get stock corporate action list
-for actions in client.reference.stock_corporate_action_list(country_symbol="US:spy",from_date="2020-08-18",action_type="split",limit=100):
+for actions in client.reference.stock_corporate_action_list(country_symbol="US:TSLA",from_date="2020-08-18",action_type="split",limit=100):
     print(actions)
 '''
 #***************************************economic event***************************#
 '''
 # Get economic event codes of all countries
-event_codes= client.economic.event_codes()
+event_codes= client.economic.event_codes(country_iso_code="US")
 '''
 
 '''
 # Get economic event list
-event_list= client.economic.event_list(country_iso_code="US")
+for event_list in  client.economic.event_list(country_iso_code="US",limit=5):
+    print(event_list)
 '''
 
 '''
 # Get economic event by date
 event= client.economic.event()
+print(event)
 '''
-
 
 
 #***************************************holiday***************************#
@@ -107,4 +109,5 @@ for news_list in client.news.news_list(full_symbol="stock:US:TSLA",from_date="20
 '''
 # Get latest news.use for real-time data
 news_latest= client.news.news_latest(full_symbol="stock:US:TSLA",limit=5)
+print(news_latest)
 '''

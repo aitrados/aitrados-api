@@ -7,13 +7,6 @@ EVENT_LIST_REQUEST_DATA: Endpoint = Endpoint(
     mandatory_params=[],
     optional_params=[
         EndpointParam(
-            name="secret_key",
-            location=ParamLocation.QUERY,
-            param_type=ParamType.STRING,
-            required=False,
-            description="API secret key, min length 20",
-        ),
-        EndpointParam(
             name="country_iso_code",
             location=ParamLocation.QUERY,
             param_type=ParamType.STRING,
@@ -52,7 +45,7 @@ EVENT_LIST_REQUEST_DATA: Endpoint = Endpoint(
             name="sort",
             location=ParamLocation.QUERY,
             param_type=ParamType.STRING,
-            default="asc",
+
             required=False,
             description="Sort direction (asc or desc)",
         ),
@@ -73,13 +66,13 @@ EVENT_LIST_REQUEST_DATA: Endpoint = Endpoint(
             description="Data format (json, csv)",
         ),
         EndpointParam(
-            name="debug",
+            name="next_page_key",
             location=ParamLocation.QUERY,
-            param_type=ParamType.INTEGER,
-            default=0,
+            param_type=ParamType.STRING,
+            default=None,
             required=False,
-            description="Enable debug mode (0 or 1)",
-        ),
+            description="next_page_key",
+        )
     ],
 )
 
@@ -90,13 +83,7 @@ EVENT_REQUEST_DATA: Endpoint = Endpoint(
     description="Get an economic calendar event.",
     mandatory_params=[],
     optional_params=[
-        EndpointParam(
-            name="secret_key",
-            location=ParamLocation.QUERY,
-            param_type=ParamType.STRING,
-            required=False,
-            description="API secret key, min length 20",
-        ),
+
         EndpointParam(
             name="country_iso_code",
             location=ParamLocation.QUERY,
@@ -136,17 +123,8 @@ EVENT_REQUEST_DATA: Endpoint = Endpoint(
             name="sort",
             location=ParamLocation.QUERY,
             param_type=ParamType.STRING,
-            default="asc",
             required=False,
             description="Sort direction (asc or desc)",
-        ),
-        EndpointParam(
-            name="debug",
-            location=ParamLocation.QUERY,
-            param_type=ParamType.INTEGER,
-            default=0,
-            required=False,
-            description="Enable debug mode (0 or 1)",
         ),
     ],
 )

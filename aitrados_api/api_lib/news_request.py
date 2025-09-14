@@ -35,8 +35,8 @@ class NewsRequest(RequestBaseMixin):
 
     def news_latest(self,
                     full_symbol: str = None,
-                    sort: str = "asc",
-                    limit: int = 100,
+                    sort: str = None,
+                    limit: int = 5,
                     ):
 
         params = {

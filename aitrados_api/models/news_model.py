@@ -79,7 +79,6 @@ NEWS_LATEST_REQUEST_DATA: Endpoint = Endpoint(
             name="sort",
             location=ParamLocation.QUERY,
             param_type=ParamType.STRING,
-            default="asc",
             required=False,
             description="Sort direction (asc or desc)",
         ),
@@ -87,7 +86,7 @@ NEWS_LATEST_REQUEST_DATA: Endpoint = Endpoint(
             name="limit",
             location=ParamLocation.QUERY,
             param_type=ParamType.INTEGER,
-            default=100,
+            default=5,
             required=False,
             description="Number of results to return (default 100, max 1001)",
         )

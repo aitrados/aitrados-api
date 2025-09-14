@@ -1,5 +1,5 @@
 from aitrados_api.api_lib.request_base_mixin import RequestBaseMixin
-from aitrados_api.models.ohlc_model import REFERENCE_REQUEST_DATA, OPTION_SEARCH_REQUEST_DATA, \
+from aitrados_api.models.reference_model import REFERENCE_REQUEST_DATA, OPTION_SEARCH_REQUEST_DATA, \
     OPTIONS_EXPIRATION_DATE_LIST_REQUEST_DATA, STOCK_CORPORATE_ACTION_LIST_REQUEST_DATA
 
 
@@ -65,8 +65,7 @@ class ReferenceRequest(RequestBaseMixin):
             else:
                 break
 
-    def options_expiration_date_list(self, schema_asset: str, country_symbol: str, limit: int | None = None,
-                                     format=None):
+    def options_expiration_date_list(self, schema_asset: str, country_symbol: str):
         """
         Function to get a list of option expiration dates.
 
@@ -78,8 +77,6 @@ class ReferenceRequest(RequestBaseMixin):
         params = {
             "schema_asset": schema_asset,
             "country_symbol": country_symbol,
-            "limit": limit,
-            "format": format
         }
 
         return self._common_requests.get_general_request(OPTIONS_EXPIRATION_DATE_LIST_REQUEST_DATA, params=params)

@@ -10,10 +10,11 @@ class EconomicRequest(RequestBaseMixin):
                    source_id: str | None = None,
                    from_date: str | None = None,
                    to_date: str | None = None,
-                   sort: str | None = "asc",
+                   sort: str=None,
                    limit: int | None = 100,
                    format: str | None = "json",
-                   debug: int | None = 0):
+                   next_page_key:str=None,
+                   ):
         """
         Function to request a list of economic calendar events.
         :param country_iso_code: Country ISO code (e.g., US, CN).
@@ -36,11 +37,18 @@ class EconomicRequest(RequestBaseMixin):
             "sort": sort,
             "limit": limit,
             "format": format,
-            "debug": debug,
+            "next_page_key": next_page_key,
+
         }
 
-        return self._common_requests.get_general_request(EVENT_LIST_REQUEST_DATA,
-                                                         params=params)
+        while True:
+            redata, next_page_key = self._common_requests.common_iterate_list(EVENT_LIST_REQUEST_DATA, params=params)
+
+            yield redata
+            if next_page_key:
+                params["next_page_key"] = next_page_key
+            else:
+                break
 
     def event(self,
               country_iso_code: str | None = None,
@@ -48,8 +56,8 @@ class EconomicRequest(RequestBaseMixin):
               source_id: str | None = None,
               from_date: str | None = None,
               to_date: str | None = None,
-              sort: str | None = "asc",
-              debug: int | None = 0):
+              sort: str =None,
+              ):
         params = {
             "country_iso_code": country_iso_code,
             "event_code": event_code,
@@ -57,7 +65,7 @@ class EconomicRequest(RequestBaseMixin):
             "from_date": from_date,
             "to_date": to_date,
             "sort": sort,
-            "debug": debug,
+
         }
 
         return self._common_requests.get_general_request(EVENT_REQUEST_DATA,

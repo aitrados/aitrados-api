@@ -26,7 +26,6 @@ HOLIDAY_LIST_REQUEST_DATA: Endpoint = Endpoint(
     description="Get a list of holiday list.",
     mandatory_params=[],
     optional_params=[
-
         EndpointParam(
             name="full_symbol",
             location=ParamLocation.QUERY,
@@ -86,14 +85,7 @@ HOLIDAY_LIST_REQUEST_DATA: Endpoint = Endpoint(
             default=None,
             required=False,
             description="next_page_key",
-        ),
-        EndpointParam(
-            name="debug",
-            location=ParamLocation.QUERY,
-            param_type=ParamType.INTEGER,
-            default=0,
-            required=False,
-            description="Enable debug mode (0 or 1)",
-        ),
+        )
+
     ],
 )

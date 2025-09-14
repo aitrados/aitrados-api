@@ -98,15 +98,7 @@ class BaseClient:
 
         time.sleep(wait_time)
 
-    @retry(
-        stop=stop_after_attempt(100000),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type(
-            (httpx.TimeoutException, httpx.NetworkError, httpx.HTTPStatusError)
-        ),
-        #before_sleep=before_sleep_log(logger, logging.WARNING),
-        #after=after_log(logger, logging.INFO),
-    )
+
 
     def sleeping_task(self,) -> None:
 
@@ -117,15 +109,21 @@ class BaseClient:
             if wait_time==0:
                 return
 
-            if self.config.debug:
-                logger.debug(f"AITRADOS API -> Rate limit({limit_type}) exceeded. Please wait {wait_time} seconds")
+            #if self.config.debug:
+            logger.warning(f"AITRADOS API -> Rate limit({limit_type}) exceeded. Please wait {wait_time} seconds")
 
-
-
-            #logger.warning(f"Rate limit({limit_type}) exceeded. Please wait {wait_time} seconds",)
             time.sleep(math.ceil(wait_time))
 
 
+    @retry(
+        stop=stop_after_attempt(100000),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type(
+            (httpx.TimeoutException, httpx.NetworkError, httpx.HTTPStatusError)
+        ),
+        #before_sleep=before_sleep_log(logger, logging.WARNING),
+        #after=after_log(logger, logging.INFO),
+    )
     def request(self, endpoint: Endpoint[T],fail_action="quit", **kwargs: Any) -> UnifiedResponse|ErrorResponse:
         """
         Make request with rate limiting and retry logic.

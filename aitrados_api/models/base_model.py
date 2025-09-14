@@ -167,7 +167,15 @@ class Endpoint(BaseModel, Generic[T]):
         path = self.path
         for param in self.mandatory_params:
             if param.location == ParamLocation.PATH and param.name in params:
-                path = path.replace(f"{{{param.name}}}", str(params[param.name]))
+                value=params[param.name]
+                #如果是datetime,要转成iso格式
+                if isinstance(value, (datetime, date)):
+                    value=value.isoformat()
+                else:
+                    value=str(value)
+
+
+                path = path.replace(f"{{{param.name}}}", value)
 
         if self.url_type == URLType.API and self.version:
             return f"{base_url}/{self.version.value}/{path}"
