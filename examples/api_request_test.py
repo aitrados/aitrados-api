@@ -21,8 +21,8 @@ params = {
     "schema_asset": SchemaAsset.CRYPTO,
     "country_symbol": "GLOBAL:BTCUSD",
     "interval": "1m",
-    "from_date": "2025-07-18T00:00:00Z",
-    "to_date": "2025-09-05T23:59:59Z",
+    "from_date": "2025-07-18T00:00:00+00:00",
+    "to_date": "2025-09-05T23:59:59+00:00",
     "format": "json",
     "limit": 30
 }

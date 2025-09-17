@@ -1,5 +1,6 @@
 import asyncio
 import threading
+import traceback
 from typing import Callable, Dict
 
 import websockets
@@ -33,7 +34,7 @@ class WebSocketClientMixin:
 
 class WebSocketClient(WebSocketClientMixin):
     RE_SUBSCRIBE_TYPES=[
-        "ohlc:1m",
+        "ohlc",
         "news",
         "event"
     ]
@@ -117,7 +118,7 @@ class WebSocketClient(WebSocketClientMixin):
         subscribe_payload = {
             "message_type": "subscribe",
             "params": {
-                "subscribe_type": "ohlc:1m",
+                "subscribe_type": "ohlc",
                 "topics": topics
             }
         }
@@ -173,8 +174,11 @@ class WebSocketClient(WebSocketClientMixin):
                         await self.callback(self.ohlc_handle_msg, data_list, message)
                 elif message.get("message_type") == "show_subscribe":
                     if topic_data:=message.get('result', None):
-                        for key in topic_data.keys():
-                            self.all_subscribed_topics[key] = topic_data[key]
+                        for full_key in topic_data.keys():
+
+                            key=full_key.split(":")[0]
+
+                            self.all_subscribed_topics[key] = topic_data[full_key]
                         await self.callback(self.show_subscribe_handle_msg, topic_data, message)
 
                 elif message.get("message_type") == "authenticate":
@@ -201,6 +205,7 @@ class WebSocketClient(WebSocketClientMixin):
                 break
             except Exception as e:
                 logger.error(f"Error occurred while processing message: {e}")
+                traceback.print_exc()
                 break
 
 
@@ -210,7 +215,7 @@ class WebSocketClient(WebSocketClientMixin):
         for subscribe_type in self.RE_SUBSCRIBE_TYPES:
             if topics:=self.all_subscribed_topics.get(subscribe_type):
                 match subscribe_type:
-                    case "ohlc:1m":
+                    case "ohlc":
                         await self.a_subscribe_ohlc_1m(*topics)
                     case "news":
                         await self.a_subscribe_news(*topics)

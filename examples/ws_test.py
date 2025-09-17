@@ -1,3 +1,4 @@
+import json
 import os
 import signal
 
@@ -36,9 +37,9 @@ def ohlc_handle_msg(client: WebSocketClient, data_list):
 
 
 def show_subscribe_handle_msg(client: WebSocketClient, message):
-    logger.info(f"✅ Subscription status: {message}")
+    #logger.info(f"✅ Subscription status: {message}")
 
-    print("subscriptions",client.all_subscribed_topics)
+    print("subscriptions",json.dumps(client.all_subscribed_topics))
 
 
 def auth_handle_msg(client: WebSocketClient, message):
