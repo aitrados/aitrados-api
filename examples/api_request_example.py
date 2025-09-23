@@ -2,7 +2,7 @@ import os
 from aitrados_api import SchemaAsset
 from aitrados_api import ClientConfig, RateLimitConfig
 from aitrados_api import  DatasetClient
-
+from aitrados_api.common_lib.contant import IntervalName
 
 config = ClientConfig(
     secret_key=os.getenv("AITRADOS_SECRET_KEY","YOUR_SECRET_KEY"),
@@ -20,26 +20,24 @@ client=DatasetClient(config=config)
 params = {
     "schema_asset": SchemaAsset.CRYPTO,
     "country_symbol": "GLOBAL:BTCUSD",
-    "interval": "1m",
+    "interval": IntervalName.M60,
     "from_date": "2025-07-18T00:00:00+00:00",
     "to_date": "2025-09-05T23:59:59+00:00",
     "format": "json",
     "limit": 30
 }
 #***************************************OHLC DATA***************************#
-
+'''
 ## Get historical OHLC data
 for ohlc in client.ohlc.ohlcs(**params):
     print(ohlc)
-
-
 '''
 # Get latest OHLC data.use for real-time data
 ohlc_latest=client.ohlc.ohlcs_latest(**params)
 print(ohlc_latest)
 '''
 
-'''
+
 #***************************************symbol reference***************************#
 
 stock_reference=client.reference.reference(schema_asset=SchemaAsset.STOCK,country_symbol="US:TSLA")

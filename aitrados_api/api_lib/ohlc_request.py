@@ -1,24 +1,22 @@
 
 from aitrados_api.api_lib.request_base_mixin import RequestBaseMixin
+from aitrados_api.common_lib.contant import ApiDataFormat
 from aitrados_api.models.ohlc_model import OHLC_HISTORY_LIST_REQUEST_DATA, OHLC_LATEST_LIST_REQUEST_DATA
 
 
 class OhlcRequest(RequestBaseMixin):
 
-    def ohlcs(self, schema_asset, country_symbol, interval, from_date, to_date, format="json", limit=150,sort=None):
-        """
-        Function to request OHLC data from the API.
+    def ohlcs(self, schema_asset,
+              country_symbol:str,
+              interval:str,
+              from_date:any,
+              to_date:any,
+              format:str=ApiDataFormat.CSV,
+              limit=150,
+              sort=None,
+              is_eth=False #US stock extended hour
+              ):
 
-        :param schema_asset: Schema asset (e.g., crypto, stock)
-        :param country_symbol: Stock symbol (ticker)
-        :param interval: Time interval (e.g., 1min, 5min, 15min, 30min, 1hour, 4hour)
-        :param from_date: Start date in YYYY-MM-DD format
-        :param to_date: End date in YYYY-MM-DD format
-        :param format: Data format (default is "json")
-        :param limit: Data count limit (default is 150, max is 1000)
-        :param secret_key: API secret key
-        :return: Response from the API
-        """
 
         params = {
             "schema_asset": schema_asset,
@@ -28,7 +26,8 @@ class OhlcRequest(RequestBaseMixin):
             "to_date": to_date,
             "format": format,
             "limit": limit,
-            "sort": sort
+            "sort": sort,
+            "is_eth":is_eth
         }
 
         while True:
@@ -41,7 +40,13 @@ class OhlcRequest(RequestBaseMixin):
             else:
                 break
 
-    def ohlcs_latest(self, schema_asset, country_symbol, interval, format="json", limit=150, **kwargs):
+    def ohlcs_latest(self, schema_asset:str,
+                     country_symbol:str,
+                     interval:str,
+                     format:str=ApiDataFormat.CSV,
+                     limit=150,
+                     is_eth=False
+                     , **kwargs):
 
         params = {
             "schema_asset": schema_asset,
@@ -49,6 +54,7 @@ class OhlcRequest(RequestBaseMixin):
             "interval": interval,
             "format": format,
             "limit": limit,
+            "is_eth": is_eth
         }
 
         return self._common_requests.get_general_request(OHLC_LATEST_LIST_REQUEST_DATA, params=params)

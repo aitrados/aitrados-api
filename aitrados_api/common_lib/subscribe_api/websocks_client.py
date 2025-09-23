@@ -32,6 +32,15 @@ class WebSocketClientMixin:
         await self._execute_callback(callback,self,msg)
         await self._execute_callback(self.handle_msg, self, common_msg)
 
+    def check_subscription_topic(self,subscribe_type,topic:str)->bool:
+        if not self.authorized:
+            return False
+        if topics:=self.all_subscribed_topics.get(subscribe_type):
+            return topic in topics
+
+        return False
+
+
 class WebSocketClient(WebSocketClientMixin):
     RE_SUBSCRIBE_TYPES=[
         "ohlc",
@@ -41,7 +50,7 @@ class WebSocketClient(WebSocketClientMixin):
     def __init__(self,secret_key,
 
                     is_re_subscribe:bool=True,
-                    is_reconnect:bool=False,
+                    is_reconnect:bool=True,
                     handle_msg:Callable=None,
                     news_handle_msg:Callable=None,
                     event_handle_msg:Callable=None,
@@ -112,9 +121,61 @@ class WebSocketClient(WebSocketClientMixin):
     def subscribe_event(self, *topics: str):
         self._sync_to_async(self.a_subscribe_event,*topics)
 
+    def unsubscribe_ohlc_1m(self, *topics: str):
+        self._sync_to_async(self.a_unsubscribe_ohlc_1m,*topics)
+
+    def unsubscribe_news(self, *topics: str):
+        self._sync_to_async(self.a_unsubscribe_news,*topics)
+
+    def unsubscribe_event(self, *topics: str):
+        self._sync_to_async(self.a_unsubscribe_event,*topics)
+
+
+    async def a_unsubscribe_ohlc_1m(self,*topics):
+        if not topics or not self.authorized:
+            return None
+        subscribe_payload = {
+            "message_type": "unsubscribe",
+            "params": {
+                "subscribe_type": "ohlc",
+                "topics": topics
+            }
+        }
+        await self.websocket.send(json.dumps(subscribe_payload))
+        if self.debug:
+            logger.info("--> sent ohlc unsubscribe request")
+    async def a_unsubscribe_news(self,*topics):
+        if not topics or not self.authorized:
+            return None
+        news_subscribe_payload={
+            "message_type": "unsubscribe",
+            "params": {
+                "subscribe_type": "news",
+                "topics": topics
+                }
+        }
+        await self.websocket.send(json.dumps(news_subscribe_payload))
+        if self.debug:
+            logger.info("--> sent news unsubscribe request")
+
+    async def a_unsubscribe_event(self,*topics):
+        if not topics or not self.authorized:
+            return None
+        event_subscribe_payload = {
+            "message_type": "unsubscribe",
+            "params": {
+                "subscribe_type": "event",
+                "topics": topics
+            }
+        }
+        await self.websocket.send(json.dumps(event_subscribe_payload))
+        if self.debug:
+            logger.info("--> sent event unsubscribe request")
 
 
     async def a_subscribe_ohlc_1m(self,*topics):
+        if not topics or not self.authorized:
+            return None
         subscribe_payload = {
             "message_type": "subscribe",
             "params": {
@@ -125,7 +186,12 @@ class WebSocketClient(WebSocketClientMixin):
         await self.websocket.send(json.dumps(subscribe_payload))
         if self.debug:
             logger.info("--> sent ohlc sub request")
+
+
+
     async def a_subscribe_news(self,*topics):
+        if not topics or not self.authorized:
+            return None
         news_subscribe_payload={
             "message_type": "subscribe",
             "params": {
@@ -138,6 +204,8 @@ class WebSocketClient(WebSocketClientMixin):
             logger.info("--> sent news sub request")
 
     async def a_subscribe_event(self,*topics):
+        if not topics or not self.authorized:
+            return None
         event_subscribe_payload = {
             "message_type": "subscribe",
             "params": {
@@ -148,6 +216,11 @@ class WebSocketClient(WebSocketClientMixin):
         await self.websocket.send(json.dumps(event_subscribe_payload))
         if self.debug:
             logger.info("--> sent event sub request")
+
+
+
+
+
     async def __auth_account(self):
         auth_payload = {
             "message_type": "authenticate",
@@ -262,7 +335,9 @@ class WebSocketClient(WebSocketClientMixin):
 
         except Exception as e:
             logger.error(f"Connection error: {e}")
+
         finally:
+            self.authorized=False
             self.websocket = None
     def run(self,is_thread=False):
         if self.is_reconnect:

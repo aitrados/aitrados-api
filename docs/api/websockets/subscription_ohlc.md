@@ -30,7 +30,7 @@ To subscribe to 1-minute candlestick data, send the following message:
 {
   "message_type": "subscribe",
   "params": {
-    "subscribe_type": "ohlc:1m",
+    "subscribe_type": "ohlc",
     "topics": ["CRYPTO:GLOBAL:BTCUSD"]
   }
 }
@@ -38,7 +38,7 @@ To subscribe to 1-minute candlestick data, send the following message:
 
 ### Default Subscription
 
-When you don't specify a `subscribe_type`, the system defaults to 1-minute candlestick data (`ohlc:1m`):
+When you don't specify a `subscribe_type`, the system defaults to 1-minute candlestick data (`ohlc`):
 
 ```json
 {
@@ -55,7 +55,7 @@ When you don't specify a `subscribe_type`, the system defaults to 1-minute candl
 |-----------|------|----------|-------------|
 | `message_type` | string | Yes | Must be set to "subscribe" for subscription requests |
 | `params` | object | Yes | Contains subscription parameters |
-| `params.subscribe_type` | string | No | Type of data to subscribe to (defaults to "ohlc:1m") |
+| `params.subscribe_type` | string | No | Type of data to subscribe to (defaults to "ohlc") |
 | `params.topics` | array | Yes | Array of assets to subscribe to using [full symbol format](/docs/api/terminology/full_symbol/) |
 
 ### Checking Current Subscriptions
@@ -98,8 +98,8 @@ When subscribed, you will receive OHLC data with the following structure:
       "country_iso_code": "GLOBAL",
       "exchange": "GLOBAL",
       "symbol": "BTCUSD",
-      "open_timestamp": "2025-09-14T10:55:00+00:00",
-      "time_key_timestamp": "2025-09-14T10:56:00+00:00",
+      "datetime": "2025-09-14T10:55:00+00:00",
+      "close_datetime": "2025-09-14T10:56:00+00:00",
       "open": 116080.58,
       "high": 116080.59,
       "low": 116036.8,

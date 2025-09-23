@@ -198,8 +198,10 @@ class BaseClient:
             response.raise_for_status()
             data = response.json()
 
-
-            data=UnifiedResponse(**data)
+            if data["code"]!=200:
+                data = ErrorResponse(**data)
+            else:
+                data=UnifiedResponse(**data)
 
 
             # 现在 mypy 知道这是 dict[str, Any] | list[Any]

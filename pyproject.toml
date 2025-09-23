@@ -7,13 +7,13 @@ build-backend = "hatchling.build"
 # The name users will use to install your package via pip.
 name = "aitrados-api"
 # The initial version of your package. You must increment this for every new release.
-version = "0.1.6"
+version = "0.1.7"
 
 # --- Recommended Fields ---
 authors = [
   { name="Alexander", email="support@aitrados.com" },
 ]
-description = "A  client library for the Aitrados data platform, providing access to real-time and historical financial market data via HTTP and WebSocket APIs.specifically designed for AI quantitative trading/training"
+description = "A  client library for the Aitrados data platform, providing access to real-time and historical financial market data via HTTP and WebSocket APIs.specifically designed for AI quantitative trading/training.Multiple Timeframes,Multiple-Symbols-Multiple-Timeframes Alignment"
 # Points to your README file for the long description on PyPI.
 readme = "README.md"
 # Specifies the Python versions your project supports.
@@ -47,6 +47,9 @@ dependencies = [
     "httpx",
     "tenacity",
     "pydantic",
+    "pandas",
+    "polars",
+    "pyarrow"
 ]
 
 # --- Project URLs ---

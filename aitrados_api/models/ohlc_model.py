@@ -48,12 +48,12 @@ OHLC_LATEST_LIST_REQUEST_DATA: Endpoint = Endpoint(
             description="data count limit (default 150, max 1000)",
         ),
         EndpointParam(
-            name="debug",
+            name="is_eth",
             location=ParamLocation.QUERY,
             param_type=ParamType.INTEGER,
             default=0,
             required=False,
-            description="admin debug mode (0 or 1, default 0)",
+            description="Whether to include data for US stocks' extended trading hours (pre-market and post-market). 0 = No, 1 = Yes. Default is 0.",
         ), ],
 
 )
@@ -132,6 +132,14 @@ OHLC_HISTORY_LIST_REQUEST_DATA: Endpoint = Endpoint(
             default=None,
             required=False,
             description="next_page_key",
+        ),
+        EndpointParam(
+            name="is_eth",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.INTEGER,
+            default=0,
+            required=False,
+            description="Whether to include data for US stocks' extended trading hours (pre-market and post-market). 0 = No, 1 = Yes. Default is 0.",
         )
 
     ],

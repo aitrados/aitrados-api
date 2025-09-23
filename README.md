@@ -1,46 +1,54 @@
 # aitrados-dataset-api
 
-`aitrados-dataset-api` is the official Python client for the Aitrados data platform, **specifically designed for AI quantitative trading/training**.
+`aitrados-dataset-api` is more than a Python client; it is a powerful framework engineered for professional, AI-driven quantitative trading. We move beyond simple data fetching to solve the most complex and time-consuming data management challenges, allowing you to focus exclusively on strategy development and alpha generation.
+
+Our core philosophy is to provide a seamless data engine that elevates your analysis from a single asset to a panoramic view of the entire market ecosystem. By integrating **Effortless Real-Time OHLC Chart Flows**, **Professional-Grade Multi-Symbol, Multi-Timeframe (MSMTF) Time Alignment**, and **AI-Powered Fusion Analysis** (combining K-line, news, and economic events), `aitrados-dataset-api` provides an unprecedented data foundation for sophisticated algorithmic trading.
+
+**Github**: [https://github.com/aitrados/dataset-api](https://github.com/aitrados/dataset-api)
+
+**DOCS**: [https://docs.aitrados.com/en/docs/api/quickstart/](https://docs.aitrados.com/en/docs/api/quickstart/)  
+
+**FREE GAIN SECRET KEY**:[https://www.aitrados.com/](https://www.aitrados.com/)  
 
 
-We are committed to providing high-quality **training and trading data** for your AI strategies. The core advantage of this library is that it helps you easily integrate **naked K-line multi-timeframe technical analysis** with **real-time news and economic events** for fusion analysis, providing a solid data foundation for training complex AI models and executing time-critical real-time trading.
+## Core Advantages: Redefining Your Trading Dataflow
 
-Github:https://github.com/aitrados/dataset-api
+In quantitative trading, data is the source of alpha, but data management is often the biggest obstacle. `aitrados-dataset-api` liberates you from the complex "data plumbing."
 
-DOCS:https://docs.aitrados.com/en/docs/api/quickstart/
+*   🚀 **Effortless Real-Time OHLC Chart Flow**
+    *   **The Pain Point**: Maintaining a live, rolling, fixed-length OHLC chart (e.g., the latest 150 candles) is notoriously difficult. Developers wrestle with initial history loading, real-time WebSocket updates, managing the unclosed "live" candle, and handling the precise rollover logic—a process that is complex and highly prone to errors.
+    *   **The AiTrados Solution**: Our `LatestOhlcChartFlowManager` completely automates this entire workflow. With a single command, you get a perfectly aligned, always-current rolling chart data stream. We handle all the underlying complexity, so you can immediately focus on strategy implementation.
 
-## Table of Contents
+*   🌐 **Professional-Grade Multi-Symbol, Multi-Timeframe (MSMTF) Alignment**
+    *   **The Pain Point**: Advanced strategies like pairs trading, arbitrage, and hedging require analyzing multiple symbols across different timeframes simultaneously. Manually aligning OHLC data from these disparate sources to ensure perfect timestamp synchronization is a monumental challenge.
+    *   **The AiTrados Solution**: Our MSMTF framework `LatestOhlcMultiTimeframeManager` is a philosophy built for professional trading. It doesn't just provide multi-symbol data; its core strength lies in ensuring **precise time alignment** across all datasets. This empowers you to build sophisticated cross-market models, identify leader-follower relationships, and capture fleeting arbitrage opportunities with confidence.
 
-*   [Features](#features)
-*   [Installation](#installation)
-*   [Usage](#usage)
-    *   [HTTP API - Get Historical Data](#http-api---get-historical-data)
-    *   [WebSocket API - Subscribe to Real-time Data](#websocket-api---subscribe-to-real-time-data)
-*   [Authorization](#authorization)
-*   [Contributing](#contributing)
-*   [License](#license)
+*   🧩 **Designed for AI-Powered Fusion Analysis**
+    *   Seamlessly integrate naked K-line technical analysis, real-time news events, and macroeconomic data into a single, unified data source. This provides the clean, synchronized, and rich input required to train complex AI models and execute time-sensitive trading decisions.
 
-## Features
+## Feature Overview
 
-*   **Designed for AI Fusion Analysis**: Seamlessly integrate naked K-line multi-timeframe technical analysis, real-time news events, and macroeconomic data to provide a unified data source for AI model training and real-time trading.
-*   **Access Comprehensive Historical Financial Data via HTTP API:**
-    *   OHLC (Open, High, Low, Close) data with multi-timeframe support
-    *   Symbol information (stocks, cryptocurrencies, forex)
-    *   Options chains and expiration dates
-    *   Corporate actions (e.g., stock splits, dividends)
-    *   Macroeconomic events and calendars
-    *   Global trading holiday information
-    *   Extensive historical financial news
-*   **Subscribe to Real-time Data Streams via WebSocket API:**
-    *   Real-time OHLC data (tick-by-tick or minute-level)
-    *   Real-time news feeds
-    *   Real-time economic event alerts
+*   **Advanced Real-Time Capabilities via WebSocket:**
+    *   Fully managed, real-time rolling OHLC chart flows.
+    *   Time-aligned data streams for multiple symbols and timeframes.
+    *   Real-time news feeds and economic event alerts.
+    *   Economic event support preview_interval and realtime alerts.for example alert before 5/10/30/60 minutes 1 DAY,2 WEEKS.
+
+*   **Comprehensive Historical Data via HTTP API:**
+    *   OHLCV data with extensive multi-timeframe support.
+    *   Reference data for symbols (stocks, crypto, forex,option,futures , etc.).
+    *   Options chains and expiration dates.
+    *   Corporate actions (splits, dividends).
+    *   Macroeconomic calendars and event history.
+    *   Global trading holiday schedules.
+    *   Vast archives of historical financial news.
+
 
 ## Installation
 
 You can install this library using pip:
 ```bash
-pip install aitrados_api
+pip install aitrados-api
 ```
 
 ## Usage
@@ -253,6 +261,227 @@ if __name__ == "__main__":
 
 
 ```
+
+### LATEST REAL-TIME OHLC PRICE CHART FLOW STREAMS EXAMPLE
+
+With the `WebSocketClient` and `DatasetClient`, you can get the latest ohlc chart flow streams.
+```python
+import json
+import os
+import signal
+from time import sleep
+
+import pandas as pd
+import polars as pl
+from aitrados_api import SubscribeEndpoint, ChartDataFormat
+from aitrados_api import ClientConfig
+from aitrados_api import DatasetClient
+from aitrados_api import WebSocketClient
+from aitrados_api import LatestOhlcChartFlowManager
+from aitrados_api.common_lib.contant import IntervalName
+
+api_config = ClientConfig(
+    secret_key=os.getenv("AITRADOS_SECRET_KEY", "YOUR_SECRET_KEY"),
+    debug=True
+)
+api_client = DatasetClient(config=api_config)
+
+
+def show_subscribe_handle_msg(client: WebSocketClient, message):
+    print("subscriptions", json.dumps(client.all_subscribed_topics))
+
+
+ws_client = WebSocketClient(
+    secret_key=os.getenv("AITRADOS_SECRET_KEY", "YOUR_SECRET_KEY"),
+    show_subscribe_handle_msg=show_subscribe_handle_msg,
+    endpoint=SubscribeEndpoint.REALTIME,
+    debug=True
+)
+
+
+def latest_ohlc_chart_flow_callback(data: str | list | dict | pd.DataFrame | pl.DataFrame):
+    if isinstance(data, list):
+        print("Received data:", json.dumps(data[-2:], indent=2))
+    else:
+        print("Received data:", data)
+
+
+latest_ohlc_chart_flow_manager = LatestOhlcChartFlowManager(
+    latest_ohlc_chart_flow_callback=latest_ohlc_chart_flow_callback,
+    api_client=api_client,
+    ws_client=ws_client,
+    limit=150,
+    data_format=ChartDataFormat.DICT
+)
+
+is_close = False
+
+
+def signal_handler(sig, frame):
+    ws_client.close()
+    global is_close
+    is_close = True
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal_handler)
+    ws_client.run(is_thread=True)
+
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.M1)
+    '''
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.M3)
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.M5)
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.M10)
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.M15)
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.M60)
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.M120)
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.M240)
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.WEEK)
+    latest_ohlc_chart_flow_manager.add_item("crypto:global:btcusd", IntervalName.MON)
+    '''
+    while not is_close:
+        sleep(2)
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.M1)
+    '''
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.M3)
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.M5)
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.M10)
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.M15)
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.M60)
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.M120)
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.M240)
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.WEEK)
+    latest_ohlc_chart_flow_manager.remove_item("crypto:global:btcusd", IntervalName.MON)
+    '''
+
+```
+### Example: Real-Time OHLC Price Chart Streams with MTF (Multiple-Timeframes) and MSMTF (Multiple-Symbols-Multiple-Timeframes) Alignment
+
+Thanks to the unique time-series architecture used by AiTrados, we offer a distinct advantage in the precise temporal alignment of market data. This allows for the seamless implementation of both Multi-Timeframe (MTF) and Multi-Symbol, Multi-Timeframe (MSMTF) analysis.
+
+Our framework fully supports the following configurations:
+
+*   **Single Symbol, Single Timeframe**: The classic, focused view.
+*   **Single Symbol, Multiple Timeframes (MTF)**: Analyze a single asset's trend and entry points across different time horizons.
+*   **Multiple Symbols, Multiple Timeframes (MSMTF)**: Conduct sophisticated cross-market analysis, such as pairs trading or arbitrage, with perfectly synchronized data.
+```python
+import datetime
+import json
+import os
+import signal
+from time import sleep
+from typing import Dict, List
+
+import pandas as pd
+import polars as pl
+from loguru import logger
+
+from aitrados_api import SubscribeEndpoint, ChartDataFormat
+from aitrados_api import ClientConfig
+from aitrados_api import DatasetClient
+from aitrados_api import WebSocketClient
+from aitrados_api import LatestOhlcMultiTimeframeManager
+from aitrados_api import IntervalName
+
+api_config = ClientConfig(
+    secret_key=os.getenv("AITRADOS_SECRET_KEY", "YOUR_SECRET_KEY"),
+    debug=True
+)
+api_client = DatasetClient(config=api_config)
+
+
+def show_subscribe_handle_msg(client: WebSocketClient, message):
+    print("subscriptions", json.dumps(client.all_subscribed_topics))
+
+
+ws_client = WebSocketClient(
+    secret_key=os.getenv("AITRADOS_SECRET_KEY", "YOUR_SECRET_KEY"),
+    is_reconnect=True,
+    show_subscribe_handle_msg=show_subscribe_handle_msg,
+    endpoint=SubscribeEndpoint.REALTIME,
+    debug=True
+)
+
+
+def multi_timeframe_callback(name, data: Dict[str, List[str | list | pl.DataFrame | pd.DataFrame]], **kwargs):
+    print(f"==================Received data:{name}========================{datetime.datetime.now()}")
+
+    for full_symbol, tf_data_list in data.items():
+        for tf_data in tf_data_list:
+            if isinstance(tf_data, list):
+                print(json.dumps(tf_data[-2:], indent=2), "===len===", len(tf_data))
+            else:
+                print(tf_data)
+
+
+latest_ohlc_multi_timeframe_manager = LatestOhlcMultiTimeframeManager(
+    api_client=api_client,
+    ws_client=ws_client,
+    multi_timeframe_callback=multi_timeframe_callback,
+    limit=150,  # data length limit
+    works=10,
+    data_format=ChartDataFormat.DICT  # multi_timeframe_callback return data format
+)
+
+is_close = False
+
+
+def signal_handler(sig, frame):
+    ws_client.close()
+    global is_close
+    is_close = True
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal_handler)
+    ws_client.run(is_thread=True)
+
+    # Add single symbol with single timeframe
+    latest_ohlc_multi_timeframe_manager.add_item(
+        item_data={
+            "CRYPTO:GLOBAL:BTCUSD": [IntervalName.M60],
+        },
+        name="single_timeframe"
+    )
+
+    # Add single symbol with multiple timeframes
+    latest_ohlc_multi_timeframe_manager.add_item(
+        item_data={
+            "CRYPTO:GLOBAL:BTCUSD": [IntervalName.M60, IntervalName.DAY],
+        },
+        name="multi_timeframe"
+    )
+
+    # Add multiple symbols with multiple timeframes
+    latest_ohlc_multi_timeframe_manager.add_item(
+        item_data={
+            "CRYPTO:GLOBAL:BTCUSD": [IntervalName.M15, IntervalName.M60, IntervalName.DAY],
+            "CRYPTO:GLOBAL:ETHUSD": [IntervalName.M15, IntervalName.M60, IntervalName.DAY]
+        },
+        name="multi_symbol_multi_timeframe"
+    )
+
+    # Add multiple stocks with multiple timeframes
+
+    latest_ohlc_multi_timeframe_manager.add_item(
+        item_data={
+            "stock:us:tsla": [IntervalName.M5, IntervalName.M60, IntervalName.DAY],
+            "stock:us:spy": [IntervalName.M5, IntervalName.M60, IntervalName.WEEK],
+        },
+        name="stock_multi_timeframe"
+    )
+
+    while not is_close:
+        sleep(2)
+    # Remove item example
+    # latest_ohlc_multi_timeframe_manager.remove_item(name="multi_symbol_multi_timeframe")
+    # latest_ohlc_multi_timeframe_manager.remove_item(name="multi_timeframe")
+    # latest_ohlc_multi_timeframe_manager.remove_item(name="single_timeframe")
+    # latest_ohlc_multi_timeframe_manager.remove_item(name="stock_multi_timeframe")
+    logger.info("Exited")
+
+```
+
 
 ## Authorization
 
