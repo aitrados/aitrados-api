@@ -55,3 +55,8 @@ def to_format_data(df: pl.DataFrame, data_format: str,is_copy=True) -> str | lis
         return df.clone() if is_copy else df
     else:
         raise ValueError(f"Unsupported data format: {data_format}")
+
+def split_full_symbol(full_symbol:str):
+    #至少2个:
+
+    schema_asset, country_symbol = full_symbol.split(":", 1)

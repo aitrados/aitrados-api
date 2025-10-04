@@ -31,6 +31,12 @@ https://pypi.org/project/aitrados-api/
 pip install aitrados-api
 ```
 
+## Get EXAMPLES
+
+
+[https://github.com/aitrados/dataset-api/tree/main/examples](https://github.com/aitrados/dataset-api/tree/main/examples)
+
+
 ## Register for Free Access
 
 Register at [AiTrados website](https://www.aitrados.com/)  https://www.aitrados.com/ to get your API secret key (Free).

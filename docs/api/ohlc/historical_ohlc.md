@@ -44,6 +44,7 @@ This endpoint returns historical price data (candlesticks/bars) for the specifie
 | `format`        | string | No | "json"  | Response format ("json" or "csv")                       |
 | `limit`         | integer | No | 150     | Maximum number of data points to return (max: 1000)     |
 | `sort`          | string | No | 'asc'   | Sort direction ("asc" or "desc")                                            |
+| `is_eth`     | boolean | No       | false   | Set to `true` to include data from extended trading hours for US stocks.    |
 | `next_page_key` | string | No | -       | Pagination token for retrieving the next set of results |
 
 ### Supported Intervals

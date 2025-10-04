@@ -3,7 +3,7 @@ import math
 import time
 from typing import Any, TypeVar
 import warnings
-
+import asyncio
 import httpx
 
 from pydantic import BaseModel
@@ -44,13 +44,8 @@ class BaseClient:
 
         self.max_rate_limit_retries = getattr(config, "max_rate_limit_retries", 3)
         self._rate_limit_retry_count = 0
-
-
-
         self._setup_http_client()
-
-
-        # Initialize rate limiter
+        self._setup_async_http_client()
         self._rate_limiter = DatasetRateLimiter(
             QuotaConfig(
                 daily_limit=self.config.rate_limit.daily_limit,
@@ -71,6 +66,18 @@ class BaseClient:
                 "Accept": "application/json",
             },
         )
+    def _setup_async_http_client(self) -> None:
+        """
+        Setup Async HTTP client with default configuration.
+        """
+        self.async_client = httpx.AsyncClient(
+            timeout=self.config.timeout,
+            follow_redirects=True,
+            headers={
+                "User-Agent": "Dataset-Python-Client/1.0",
+                "Accept": "application/json",
+            },
+        )
 
     def close(self) -> None:
         """
@@ -78,7 +85,21 @@ class BaseClient:
         """
         if hasattr(self, "client") and self.client is not None:
             self.client.close()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:  # 'RuntimeError: There is no current event loop...'
+            loop = None
 
+        if loop and loop.is_running():
+
+            loop.create_task(self.aclose())
+        else:
+            asyncio.run(self.aclose())
+
+    async def aclose(self) -> None:
+        """Asynchronously closes the HTTP clients."""
+        if hasattr(self, "async_client") and self.async_client and not self.async_client.is_closed:
+            await self.async_client.aclose()
     def _handle_rate_limit(self, wait_time: float) -> None:
         """
         Handle rate limiting by waiting or raising an exception based on retry count.
@@ -113,6 +134,17 @@ class BaseClient:
             logger.warning(f"AITRADOS API -> Rate limit({limit_type}) exceeded. Please wait {wait_time} seconds")
 
             time.sleep(math.ceil(wait_time))
+    async def a_sleeping_task(self) -> None:
+
+        allow, limit_type = self._rate_limiter.should_allow_request()
+        while not allow:
+            wait_time = self._rate_limiter.get_wait_time()
+            wait_time = math.ceil(wait_time)
+            if wait_time == 0:
+                return
+
+            logger.warning(f"AITRADOS API -> Rate limit({limit_type}) exceeded. Please wait {wait_time} seconds")
+            await asyncio.sleep(math.ceil(wait_time))
 
 
     @retry(
@@ -125,25 +157,6 @@ class BaseClient:
         #after=after_log(logger, logging.INFO),
     )
     def request(self, endpoint: Endpoint[T],fail_action="quit", **kwargs: Any) -> UnifiedResponse|ErrorResponse:
-        """
-        Make request with rate limiting and retry logic.
-
-        Args:
-            endpoint: The Endpoint object describing the request (method, path, etc.).
-            **kwargs: Arbitrary keyword arguments passed as request parameters.
-
-        Returns:
-            Either a single Pydantic model of type T or a list of T.
-        """
-        '''
-        # First, check if we're already over the rate limit
-        if not self._rate_limiter.should_allow_request():
-            wait_time = self._rate_limiter.get_wait_time()
-            raise RateLimitError(
-                f"Rate limit exceeded. Please wait {wait_time:.1f} seconds",
-                retry_after=wait_time,
-            )
-        '''
         self.sleeping_task()
         self._rate_limit_retry_count = 0  # Reset counter at start of new request
 
@@ -185,7 +198,7 @@ class BaseClient:
             data = self.handle_response(response)
             return data
 
-            #return self._process_response(endpoint, data)
+
 
         except Exception as e:
 
@@ -226,70 +239,69 @@ class BaseClient:
             data=ErrorResponse(status="request_error", message="Unknown error")
         return data
 
-    @staticmethod
-    def _process_response(endpoint: Endpoint[T], data: Any) -> T | list[T]:
-        """
-        Process the response data with warnings, returning T or list[T].
-        """
-        if isinstance(data, dict):
-            # Check for error messages
-            if "Error Message" in data:
-                raise DatasetError(data["Error Message"])
-            if "message" in data:
-                raise DatasetError(data["message"])
-            if "error" in data:
-                raise DatasetError(data["error"])
 
-        if isinstance(data, list):
-            processed_items: list[T] = []
-            for item in data:
-                with warnings.catch_warnings(record=True) as w:
-                    warnings.simplefilter("always")
-                    if isinstance(item, dict):
-                        processed_item = endpoint.response_model.model_validate(item)
-                    else:
-                        # If it's not a dict, try to feed it into the first field
-                        model = endpoint.response_model
-                        try:
-                            first_field = next(iter(model.__annotations__))
-                            field_info = model.model_fields[first_field]
-                            field_name = field_info.alias or first_field
-                            processed_item = model.model_validate({field_name: item})
-                        except (StopIteration, KeyError, AttributeError) as exc:
-                            raise ValueError(
-                                f"Invalid model structure for {model.__name__}"
-                            ) from exc
-                    for warning in w:
-                        logger.warning(f"Validation warning: {warning.message}")
-                    processed_items.append(processed_item)
-            return processed_items
-        return endpoint.response_model.model_validate(data)
 
-    async def request_async(self, endpoint: Endpoint[T], **kwargs: Any) -> T | list[T]:
+    @retry(
+        stop=stop_after_attempt(100000),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type(
+            (httpx.TimeoutException, httpx.NetworkError, httpx.HTTPStatusError)
+        ),
+        # before_sleep=before_sleep_log(logger, logging.WARNING),
+        # after=after_log(logger, logging.INFO),
+    )
+    async def a_request(self, endpoint: Endpoint[T], fail_action="quit",
+                        **kwargs: Any) -> UnifiedResponse | ErrorResponse:
         """
-        Make async request with rate limiting, returning T or list[T].
+        Make async request with rate limiting and retry logic.
+
+        Args:
+            endpoint: The Endpoint object describing the request (method, path, etc.).
+            fail_action: Action to take on failure (currently not used).
+            **kwargs: Arbitrary keyword arguments passed as request parameters.
+
+        Returns:
+            A UnifiedResponse or ErrorResponse object.
         """
-        validated_params = endpoint.validate_params(kwargs)
-        url = endpoint.build_url(self.config.base_url, validated_params)
-        query_params = endpoint.get_query_params(validated_params)
-        query_params["secret_key"] = self.config.secret_key
+        await self.a_sleeping_task()
+
+        self._rate_limit_retry_count = 0  # Reset counter at start of new request
 
         try:
-            async with httpx.AsyncClient(
-                timeout=self.config.timeout,
-                follow_redirects=True,
-                headers={
-                    "User-Agent": "AITRADOS Dataset-Python-Client/1.0",
-                    "Accept": "application/json",
-                },
-            ) as client:
-                response = await client.request(
-                    endpoint.method.value, url, params=query_params
-                )
-                data = self.handle_response(response)
-                return self._process_response(endpoint, data)
-        except Exception as e:
+            self._rate_limiter.record_request()
 
+            # Validate and process parameters
+            validated_params = endpoint.validate_params(kwargs)
+
+            base_url = self.config.base_url
+
+            # Build URL
+            url = endpoint.build_url(base_url, validated_params)
+
+            # Extract query parameters and add API key
+            query_params = endpoint.get_query_params(validated_params)
+            query_params["secret_key"] = self.config.secret_key
+
+            response = await self.async_client.request(
+                endpoint.method.value, url, params=query_params
+            )
+
+            if self.config.debug:
+                logger.debug(f"AITRADOS API -> Request:  {response.url} - Status: {response.status_code}")
+
+            # Handle 429 responses from the API
+            if response.status_code == 429:
+                self._rate_limiter.handle_response(response.status_code, response.text)
+                wait_time = self._rate_limiter.get_wait_time()
+                raise RateLimitError(
+                    f"Rate limit exceeded. Please wait {wait_time:.1f} seconds",
+                    retry_after=wait_time,
+                )
+
+            data = self.handle_response(response)
+            return data
+
+        except Exception as e:
             raise
 
 

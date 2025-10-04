@@ -9,9 +9,9 @@ config = ClientConfig(
     timeout=30,
     max_retries=1000,
     rate_limit=RateLimitConfig(
-        daily_limit=250,
+        daily_limit=100000,
         requests_per_second=2,
-        requests_per_minute=20
+        requests_per_minute=30
     ),
     debug=True
 )
@@ -82,8 +82,11 @@ for event_list in  client.economic.event_list(country_iso_code="US",limit=5):
 event= client.economic.event()
 print(event)
 '''
-
-
+'''
+# Get economic latest event list
+latest_events = client.economic.latest_events(country_iso_code="us")
+print(latest_events)
+'''
 #***************************************holiday***************************#
 '''
 # Get holiday list
@@ -109,3 +112,4 @@ for news_list in client.news.news_list(full_symbol="stock:US:TSLA",from_date="20
 news_latest= client.news.news_latest(full_symbol="stock:US:TSLA",limit=5)
 print(news_latest)
 '''
+client.close()

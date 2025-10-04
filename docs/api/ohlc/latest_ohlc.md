@@ -41,6 +41,7 @@ This endpoint returns the most recent price data (candlesticks/bars) for the spe
 | `secret_key` | string | Yes | -       | Your API secret key                                     |
 | `format` | string | No | "json"  | Response format ("json" or "csv")                       |
 | `limit` | integer | No | 150     | Number of most recent data points to return (max: 1000) |
+| `is_eth`     | boolean | No       | false   | Set to `true` to include data from extended trading hours for US stocks.    |
 
 ### Supported Intervals
 

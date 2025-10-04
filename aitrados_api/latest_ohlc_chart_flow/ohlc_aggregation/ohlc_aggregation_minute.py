@@ -1,4 +1,3 @@
-import math
 from datetime import datetime, timedelta
 from typing import Dict
 
@@ -29,7 +28,7 @@ class OhlcAggregationMinute:
             self.is_aggregated = True
 
     def __common_new_bar(self, new_bar_start_time: datetime):
-        """通用内部函数：创建新的聚合K线。"""
+        """Common internal function: Create a new aggregated K-line bar."""
         new_bar_data = self.data.copy()
         new_bar_data["datetime"] = new_bar_start_time
         new_bar_data["interval"] = self.interval
@@ -40,7 +39,7 @@ class OhlcAggregationMinute:
         self.is_aggregated = True
 
     def __common_update_bar(self):
-        """通用内部函数：更新最后一根未收盘的K线。"""
+        """Common internal function: Update the last unclosed K-line bar."""
         last_bar = self.df[-1, :]
         df_without_last = self.df[:-1]
         last_bar_dict = last_bar.to_dicts()[0]
@@ -49,20 +48,20 @@ class OhlcAggregationMinute:
         last_bar_dict["low"] = min(last_bar_dict["low"], self.data["low"])
         last_bar_dict["close"] = self.data["close"]
         last_bar_dict["volume"] += self.data["volume"]
-        last_bar_dict["close_datetime"] = self.data["close_datetime"]  # 直接使用 datetime 对象
+        last_bar_dict["close_datetime"] = self.data["close_datetime"]  # Use datetime object directly
 
         updated_last_row_df = pl.DataFrame([last_bar_dict], schema=self.df.schema)
         self.df = pl.concat([df_without_last, updated_last_row_df])
         self.is_aggregated = True
 
     def __aggregate_common_interval(self):
-        """通用聚合函数，用于将1分钟数据流合并为任意分钟周期（例如3M, 5M, 10M）。"""
+        """Common aggregation function for merging 1-minute data streams into arbitrary minute intervals (e.g., 3M, 5M, 10M)."""
         minutes = int(self.interval[:-1])
 
         last_bar = self.df[-1, :]
-        last_bar_open_time = last_bar.item(0, "datetime")  # 直接获取 datetime 对象
-        last_bar_close_time = last_bar.item(0, "close_datetime") # 直接获取 datetime 对象
-        new_1m_bar_open_time = self.data["datetime"]  # 直接获取 datetime 对象
+        last_bar_open_time = last_bar.item(0, "datetime")  # Get datetime object directly
+        last_bar_close_time = last_bar.item(0, "close_datetime") # Get datetime object directly
+        new_1m_bar_open_time = self.data["datetime"]  # Get datetime object directly
 
         if new_1m_bar_open_time < last_bar_close_time:
             return
@@ -77,13 +76,14 @@ class OhlcAggregationMinute:
 
     def __aggregate_common_interval_for_large_minute(self):
         """
-        为大周期（>=60分钟）设计的聚合函数。
-        通过分析相对于当前数据点最近15天的历史数据中“重复出现的开盘时间规律”，
-        来精确判断新K线的开启时刻。此方法能有效规避长假等影响，并完全适用于历史回测。
+        Aggregation function designed for large intervals (>=60 minutes).
+        By analyzing "recurring opening time patterns" from the last 15 days of historical data
+        relative to the current data point, it accurately determines when new K-line bars should start.
+        This method effectively avoids the impact of long holidays and is fully applicable to historical backtesting.
         """
         new_1m_bar_open_time = self.data["datetime"]
 
-        # --- 步骤 1: 从相对于当前数据点的最近15天历史中，找出“重复出现”的开盘时间点 ---
+        # --- Step 1: Find "recurring" opening time points from the last 15 days of historical data relative to the current data point ---
         historical_anchor_times = set()
         try:
             start_date_filter = new_1m_bar_open_time - pl.duration(days=15)
@@ -95,11 +95,11 @@ class OhlcAggregationMinute:
                 return self.__aggregate_common_interval()
 
 
-            # Bug修复：在value_counts()前使用.alias()给时间列一个确定的名称 "anchor_time"
+            # Bug fix: Use .alias() to give the time column a definite name "anchor_time" before value_counts()
             anchor_time_counts = recent_df.get_column("datetime").dt.time().alias("anchor_time").value_counts()
 
-            # 只选择那些出现次数大于1的时间点
-            # 使用我们刚刚设置的别名"anchor_time"来安全地获取列
+            # Select only time points that appear more than once
+            # Use the alias "anchor_time" we just set to safely get the column
             proven_anchor_times = anchor_time_counts.filter(
                 pl.col("count") > 1
             ).get_column("anchor_time")
@@ -119,7 +119,7 @@ class OhlcAggregationMinute:
             self.__aggregate_common_interval()
             return
 
-        # --- 步骤 2: 使用找到的“可靠锚点”来判断新K线的归属 ---
+        # --- Step 2: Use the found "reliable anchor points" to determine the attribution of new K-line bars ---
         last_bar = self.df[-1, :]
         last_bar_open_time = last_bar.item(0, "datetime")
 
@@ -136,15 +136,16 @@ class OhlcAggregationMinute:
 
     def __aggregate_common_interval_for_week(self):
         """
-        将1分钟数据聚合为周线bar，动态确定周的起始日和时间，使其对假期和不规则日程具有鲁棒性。
+        Aggregate 1-minute data into weekly bars, dynamically determining the start day and time of the week
+        to make it robust against holidays and irregular schedules.
         """
-        # 步骤 1: 从历史数据中获取主要的开盘日和时间。
+        # Step 1: Get the dominant opening day and time from historical data.
         start_info = get_dominant_week_start_info(self.df)
         new_1m_bar_open_time = self.data["datetime"]
 
         if not start_info:
-            # 当没有足够历史来确定规律时的后备方案。
-            # 检查ISO周数是否已更改。虽然不够完美，但优于无操作。
+            # Fallback when there's insufficient history to determine the pattern.
+            # Check if the ISO week number has changed. Not perfect, but better than no action.
             last_bar_open_time = self.df.item(-1, "datetime")
             if new_1m_bar_open_time.isocalendar().week != last_bar_open_time.isocalendar().week:
                 self.__common_new_bar(new_1m_bar_open_time)
@@ -155,49 +156,49 @@ class OhlcAggregationMinute:
         dominant_weekday, dominant_start_time = start_info
         last_bar_open_time = self.df.item(-1, "datetime")
 
-        # 步骤 2: 确定下一个周线bar的预期开始时间。
-        # 从上一个bar的日期开始，找到匹配主要开盘日的下一个日期。
+        # Step 2: Determine the expected start time of the next weekly bar.
+        # Starting from the last bar's date, find the next date that matches the dominant opening day.
         # Polars: weekday() is 1-7 for Mon-Sun. Python: weekday() is 0-6 for Mon-Sun.
         last_bar_date = last_bar_open_time.date()
         days_ahead = (dominant_weekday - 1 - last_bar_date.weekday() + 7) % 7
-        if days_ahead == 0:  # 如果今天是主要开盘日，则寻找下一周的。
+        if days_ahead == 0:  # If today is the dominant opening day, look for next week's.
             days_ahead = 7
 
         next_dominant_day_date = last_bar_date + timedelta(days=days_ahead)
 
-        # 结合日期和时间，得到精确的预期开始时间戳。
-        # 假设与上一个bar使用相同的时区。
+        # Combine date and time to get the precise expected start timestamp.
+        # Assume the same timezone as the previous bar.
         expected_next_bar_start_time = datetime.combine(
             next_dominant_day_date,
             dominant_start_time,
             tzinfo=last_bar_open_time.tzinfo
         )
 
-        # 步骤 3: 比较并决策。
+        # Step 3: Compare and make decision.
         if new_1m_bar_open_time >= expected_next_bar_start_time:
-            # 新数据处于或晚于新一周交易的预期开始时间。
-            # 这个新bar的开始时间就是我们为它看到的第一个tick的时间。
+            # New data is at or after the expected start time of a new week's trading.
+            # The start time of this new bar is the time of the first tick we see for it.
             self.__common_new_bar(new_1m_bar_open_time)
         else:
-            # 新数据仍属于当前周的交易时段。
+            # New data still belongs to the current week's trading session.
             self.__common_update_bar()
 
 
     def __aggregate_common_interval_for_mon(self):
         """
-        将1分钟数据聚合为月线bar。
+        Aggregate 1-minute data into monthly bars.
         """
-        # 步骤 1: 获取时间戳
+        # Step 1: Get timestamps
         last_bar_open_time = self.df.item(-1, "datetime")
         new_1m_bar_open_time = self.data["datetime"]
 
-        # 步骤 2: 如果新数据的月份晚于最后K线的月份，则创建新的bar。
+        # Step 2: If the new data's month is later than the last K-line's month, create a new bar.
         is_new_month = (new_1m_bar_open_time.year > last_bar_open_time.year) or \
                        (new_1m_bar_open_time.year == last_bar_open_time.year and
                         new_1m_bar_open_time.month > last_bar_open_time.month)
 
         if is_new_month:
-            # 新bar的起始时间是该新月的第一个tick的时间戳。
+            # The start time of the new bar is the timestamp of the first tick in that new month.
             self.__common_new_bar(new_1m_bar_open_time)
         else:
             self.__common_update_bar()

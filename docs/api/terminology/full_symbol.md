@@ -16,12 +16,12 @@ tags: ["Beginners", "API", "Python"]
 The AiTrados API is designed to accommodate different markets and instrument types from around the world. We use a standardized `full_symbol` format to uniquely identify each trading instrument, following this pattern:
 
 ```
-ASSET_NAME:COUNTRY:SYMBOL
+ASSET_NAME:COUNTRY_ISO_CODE:SYMBOL
 ```
 
 Where:
 - **ASSET_NAME**: The category of the financial instrument (STOCK, FOREX, CRYPTO,FUTURE,OPTION etc.)
-- **COUNTRY**: The market/country code (US, JP,CN,UK,HK,AU, GLOBAL, etc.)
+- **COUNTRY**: The country iso code (US, JP,CN,UK,HK,AU, GLOBAL, etc.)
 {{< alert context="info" >}}
 If no region is specified, use `GLOBAL`
 {{< /alert >}}

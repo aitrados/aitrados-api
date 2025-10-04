@@ -1,4 +1,67 @@
 from aitrados_api.models.base_model import Endpoint, APIVersion, EndpointParam, ParamLocation, ParamType, DataFormat
+
+LATEST_EVENT_LIST_REQUEST_DATA: Endpoint = Endpoint(
+    name="economic_calendar_latest_event_list",
+    path="economic_calendar/latest_event_list",
+    version=APIVersion.V2,
+    description="Get a list of economic calendar latest events.",
+    mandatory_params=[],
+    optional_params=[
+        EndpointParam(
+            name="country_iso_code",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.STRING,
+            required=False,
+            description="Country ISO code (e.g., US, CN)",
+        ),
+        EndpointParam(
+            name="event_code",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.STRING,
+            required=False,
+            description="Event code",
+        ),
+        EndpointParam(
+            name="date_type",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.STRING,
+            default="upcoming",
+            required=False,
+            description="search date range (upcoming or historical and all)",
+        ),
+
+        EndpointParam(
+            name="sort",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.STRING,
+
+            required=False,
+            description="Sort direction (asc or desc)",
+        ),
+        EndpointParam(
+            name="limit",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.INTEGER,
+            default=100,
+            required=False,
+            description="Number of results to return (default 100, max 1001)",
+        ),
+        EndpointParam(
+            name="format",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.STRING,
+            default="csv",
+            required=False,
+            description="Data format (json, csv)",
+        )
+
+    ],
+)
+
+
+
+
+
 EVENT_LIST_REQUEST_DATA: Endpoint = Endpoint(
     name="economic_calendar_event_list",
     path="economic_calendar/event_list",
@@ -128,6 +191,10 @@ EVENT_REQUEST_DATA: Endpoint = Endpoint(
         ),
     ],
 )
+
+
+
+
 
 EVENT_CODES_REQUEST_DATA: Endpoint = Endpoint(
     name="economic_calendar_event_codes",

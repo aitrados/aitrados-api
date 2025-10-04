@@ -10,6 +10,13 @@ class CommonRequests(EndpointGroup):
 
         return self.client.request(endpoint, fail_action=fail_action, **params)
 
+
+    async def a_get_general_request(self, endpoint: Endpoint, params: dict = None, fail_action="quit") -> any:
+        if not params:
+            params = {}
+
+        return await self.client.a_request(endpoint, fail_action=fail_action, **params)
+
     def common_iterate_list(self, request_data_key, params) -> tuple[UnifiedResponse | ErrorResponse, str | None]:
         redata = self.get_general_request(request_data_key, params=params)
         next_page_key = None
@@ -17,3 +24,11 @@ class CommonRequests(EndpointGroup):
             result = redata.result
             next_page_key = result.get("next_page_key", None)
         return redata, next_page_key
+    async def a_common_iterate_list(self, request_data_key, params) -> tuple[UnifiedResponse | ErrorResponse, str | None]:
+        redata = await self.a_get_general_request(request_data_key, params=params)
+        next_page_key = None
+        if isinstance(redata, UnifiedResponse):
+            result = redata.result
+            next_page_key = result.get("next_page_key", None)
+        return redata, next_page_key
+

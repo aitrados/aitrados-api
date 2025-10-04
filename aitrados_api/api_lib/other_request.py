@@ -7,3 +7,8 @@ class OtherRequest(RequestBaseMixin):
         params={}
         return self._common_requests.get_general_request(SERVER_ADDRESS_INFO_REQUEST_DATA,
                                                                 params=params)
+
+    async def a_server_address_info(self):
+        params = {}
+        return await self._common_requests.a_get_general_request(SERVER_ADDRESS_INFO_REQUEST_DATA,
+                                                                 params=params)
