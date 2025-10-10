@@ -1,6 +1,7 @@
 import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 from datetime import datetime
 from time import sleep
 from typing import Callable, List, Dict
@@ -19,6 +20,7 @@ class LatestOhlcChartFlowManager:
                  limit=150,
                  data_format=ChartDataFormat.POLARS,
                  works=10,
+                 ohlc_handle_msg: Callable=None#reserve WebSocketClient ohlc callback
                  ):
 
         ws_client.ohlc_handle_msg = self.subscribe_ohlc_handle_msg
@@ -28,6 +30,7 @@ class LatestOhlcChartFlowManager:
         self.limit = limit
         self.data_format = data_format
         self.works = works
+        self.ohlc_handle_msg=ohlc_handle_msg
         self.executor = ThreadPoolExecutor(max_workers=self.works)
 
         self.symbol_charting_list: Dict[str, Dict[tuple[str, bool], LatestOhlcChartFlow]] = {}
@@ -114,7 +117,9 @@ class LatestOhlcChartFlowManager:
         pass
 
     def subscribe_ohlc_handle_msg(self, client: WebSocketClient, data_list):
-        self.push_subscribe_ohlc_data(data_list)
+        self.push_subscribe_ohlc_data(deepcopy(data_list))
+        if self.ohlc_handle_msg:
+            self.ohlc_handle_msg(client, deepcopy(data_list))
 
     def push_subscribe_ohlc_data(self, data_list: List[Dict]):
         """

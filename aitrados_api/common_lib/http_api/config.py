@@ -80,8 +80,8 @@ class ClientConfig(BaseModel):
         if not v or not v.strip():
             raise ValueError("API key cannot be empty")
         if v=="YOUR_SECRET_KEY":
-            logger.error("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY")
-            raise ValueError("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY")
+            logger.error("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY")
+            raise ValueError("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY")
 
         return v.strip()
 

@@ -1,4 +1,7 @@
 # aitrados-dataset-api
+[![PyPI version](https://badge.fury.io/py/aitrados-api.svg)](https://badge.fury.io/py/aitrados-api)
+[![Python Support](https://img.shields.io/pypi/pyversions/aitrados-api.svg)](https://pypi.org/project/aitrados-api/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 `aitrados-dataset-api` is more than a Python client; it is a powerful framework engineered for professional, AI-driven quantitative trading. We move beyond simple data fetching to solve the most complex and time-consuming data management challenges, allowing you to focus exclusively on strategy development and alpha generation.
 

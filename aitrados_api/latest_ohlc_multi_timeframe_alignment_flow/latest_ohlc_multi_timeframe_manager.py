@@ -18,6 +18,10 @@ class LatestOhlcMultiTimeframeManager:
                  limit=150,#data length limit
                  data_format=ChartDataFormat.POLARS,#multi_timeframe_callback return data format
                  works=10,# thread works number
+                 ohlc_handle_msg: Callable = None, #reserve WebSocketClient ohlc callback
+                 latest_ohlc_chart_flow_callback: Callable = None #reserve LatestOhlcChartFlowManager streaming ohlc callback
+
+    ,
 
                  ):
         self.latest_symbol_charting_manager = LatestOhlcChartFlowManager(
@@ -26,8 +30,11 @@ class LatestOhlcMultiTimeframeManager:
             ws_client=ws_client,
             limit=limit,
             data_format=ChartDataFormat.POLARS,
-            works=works
+            works=works,
+
+            ohlc_handle_msg=ohlc_handle_msg
         )
+        self.latest_ohlc_chart_flow_callback = latest_ohlc_chart_flow_callback
 
         self.alignments: Dict[str, LatestOhlcMultiTimeframeAlignment] = {}
         self.multi_timeframe_callback = multi_timeframe_callback
@@ -54,6 +61,9 @@ class LatestOhlcMultiTimeframeManager:
 
         except (pl.ColumnNotFoundError, IndexError) as e:
             print(f"Callback Error: Failed to process DataFrame. {e}")
+        if self.latest_ohlc_chart_flow_callback:
+            self.latest_ohlc_chart_flow_callback(df.clone())
+
 
     def add_item(self, item_data: Dict[str, List], name: str = "default", is_eth=False):
         """
@@ -68,6 +78,7 @@ class LatestOhlcMultiTimeframeManager:
         self.alignments[name] = LatestOhlcMultiTimeframeAlignment(name=name,
                                                                   multi_timeframe_callback=self.multi_timeframe_callback,
                                                                   data_format=self.data_format,
+                                                                  latest_symbol_charting_manager=self.latest_symbol_charting_manager
                                                                   )
         for full_symbol, intervals in item_data.items():
             full_symbol = full_symbol.upper()

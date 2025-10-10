@@ -8,6 +8,7 @@ class EconomicRequest(RequestBaseMixin):
     def event_list(self,
                    country_iso_code: str | None = None,
                    event_code: str | None = None,
+                   impact: str | None = None,#"impact (low,medium,high)
                    source_id: str | None = None,
                    from_date: str | None = None,
                    to_date: str | None = None,
@@ -20,6 +21,7 @@ class EconomicRequest(RequestBaseMixin):
         params = {
             "country_iso_code": country_iso_code,
             "event_code": event_code,
+            "impact":impact,
             "source_id": source_id,
             "from_date": from_date,
             "to_date": to_date,
@@ -42,6 +44,7 @@ class EconomicRequest(RequestBaseMixin):
     async def a_event_list(self,
                            country_iso_code: str | None = None,
                            event_code: str | None = None,
+                           impact: str | None = None,  # "impact (low,medium,high)
                            source_id: str | None = None,
                            from_date: str | None = None,
                            to_date: str | None = None,
@@ -53,6 +56,7 @@ class EconomicRequest(RequestBaseMixin):
         params = {
             "country_iso_code": country_iso_code,
             "event_code": event_code,
+            "impact": impact,
             "source_id": source_id,
             "from_date": from_date,
             "to_date": to_date,
@@ -73,6 +77,7 @@ class EconomicRequest(RequestBaseMixin):
     def event(self,
               country_iso_code: str | None = None,
               event_code: str | None = None,
+              impact: str | None = None,  # "impact (low,medium,high)
               source_id: str | None = None,
               from_date: str | None = None,
               to_date: str | None = None,
@@ -81,6 +86,7 @@ class EconomicRequest(RequestBaseMixin):
         params = {
             "country_iso_code": country_iso_code,
             "event_code": event_code,
+            "impact": impact,
             "source_id": source_id,
             "from_date": from_date,
             "to_date": to_date,
@@ -94,6 +100,7 @@ class EconomicRequest(RequestBaseMixin):
     async def a_event(self,
                       country_iso_code: str | None = None,
                       event_code: str | None = None,
+                      impact: str | None = None,  # "impact (low,medium,high)
                       source_id: str | None = None,
                       from_date: str | None = None,
                       to_date: str | None = None,
@@ -102,6 +109,7 @@ class EconomicRequest(RequestBaseMixin):
         params = {
             "country_iso_code": country_iso_code,
             "event_code": event_code,
+            "impact": impact,
             "source_id": source_id,
             "from_date": from_date,
             "to_date": to_date,
@@ -128,7 +136,8 @@ class EconomicRequest(RequestBaseMixin):
     def latest_events(self,
                       country_iso_code: str | None = None,
                       event_code: str | None = None,
-                      date_type: str="upcoming",#(upcoming or historical and all)
+                      impact: str | None = None,  # "impact (low,medium,high)
+                      date_type: str="upcoming",  #(upcoming or historical and all)
                       limit: int | None = 5,
                       format: str | None = "json",
                       sort: str = None,
@@ -136,6 +145,7 @@ class EconomicRequest(RequestBaseMixin):
         params = {
             "country_iso_code": country_iso_code,
             "event_code": event_code,
+            "impact": impact,
             "date_type": date_type,
             "limit": limit,
             "format":format,
@@ -148,6 +158,7 @@ class EconomicRequest(RequestBaseMixin):
     async def a_latest_events(self,
                       country_iso_code: str | None = None,
                       event_code: str | None = None,
+                      impact: str | None = None,  #"impact (low,medium,high)
                       date_type: str="upcoming",#(upcoming or historical and all)
                       limit: int | None = 5,
                       format: str | None = "json",
@@ -156,6 +167,7 @@ class EconomicRequest(RequestBaseMixin):
         params = {
             "country_iso_code": country_iso_code,
             "event_code": event_code,
+            "impact": impact,
             "date_type": date_type,
             "limit": limit,
             "format":format,

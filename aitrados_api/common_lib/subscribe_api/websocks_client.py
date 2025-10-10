@@ -6,7 +6,7 @@ from typing import Callable, Dict
 import websockets
 import json
 
-from aitrados_api.common_lib.common import logger
+from aitrados_api.common_lib.common import logger, run_asynchronous_function
 
 from aitrados_api.common_lib.contant import SubscribeEndpoint
 
@@ -28,9 +28,14 @@ class WebSocketClientMixin:
             await callback( *args,**kwargs)
         else:
             callback(*args,**kwargs)
-    async def callback(self,callback,msg,common_msg):
-        await self._execute_callback(callback,self,msg)
-        await self._execute_callback(self.handle_msg, self, common_msg)
+
+    async def callback(self, callback, msg, common_msg):
+        async def internal_callback():
+            await self._execute_callback(callback, self, msg)
+            await self._execute_callback(self.handle_msg, self, common_msg)
+
+
+        asyncio.create_task(internal_callback())
 
     def check_subscription_topic(self,subscribe_type,topic:str)->bool:
         if not self.authorized:
@@ -89,16 +94,18 @@ class WebSocketClient(WebSocketClientMixin):
         self.uri=None
         self.debug=debug
 
-        self.init(endpoint)
+        self.init_data(endpoint)
 
 
-    def init(self,endpoint):
+    def init_data(self,endpoint:str=None,secret_key:str=None):
         if not endpoint:
             endpoint=SubscribeEndpoint.REALTIME
         self.uri=f"{endpoint}/ws"
+        if secret_key:
+            self.secret_key=secret_key
         if self.secret_key == "YOUR_SECRET_KEY":
-            logger.error("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY")
-            raise ValueError("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY")
+            logger.error("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY")
+            raise ValueError("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY")
 
 
     def close(self):
@@ -342,14 +349,15 @@ class WebSocketClient(WebSocketClientMixin):
     def run(self,is_thread=False):
         if self.is_reconnect:
             if not is_thread:
-                asyncio.run(self. run_with_reconnect())
+                #run_asynchronous_function
+                run_asynchronous_function(self. run_with_reconnect())
             else:
-                threading.Thread(target=lambda: asyncio.run(self.run_with_reconnect()), daemon=True).start()
+                threading.Thread(target=lambda: run_asynchronous_function(self.run_with_reconnect()), daemon=True).start()
         else:
             if not is_thread:
-                asyncio.run(self.__connect())
+                run_asynchronous_function(self.__connect())
             else:
-                threading.Thread(target=lambda: asyncio.run(self.__connect()), daemon=True).start()
+                threading.Thread(target=lambda: run_asynchronous_function(self.__connect()), daemon=True).start()
 
 
 

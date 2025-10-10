@@ -1,9 +1,7 @@
 import asyncio
 import os
 
-from aitrados_api import DatasetClient
-from aitrados_api import ClientConfig, RateLimitConfig
-from aitrados_api import SchemaAsset, IntervalName
+from aitrados_api import *
 
 
 async def run_async_example():
@@ -39,6 +37,15 @@ async def run_async_example():
     # Get latest OHLC data asynchronously. use for real-time data
     ohlc_latest = await client.ohlc.a_ohlcs_latest(**params)
     print(ohlc_latest)
+    rename_column_name_mapping = {"interval": "timeframe", }
+    filter_column_names = ["datetime", "timeframe", "open", "high", "low", "close", "volume"]
+    to_format = ApiListResultToFormatData(ohlc_latest, rename_column_name_mapping=rename_column_name_mapping,
+                                          filter_column_names=filter_column_names, limit=None)
+    pl_df = to_format.get_polars()
+    pd_df = to_format.get_pandas()
+    csv_string = to_format.get_csv()
+    data_list = to_format.get_list()
+    pass
 
     # ***************************************symbol reference***************************#
     '''
@@ -81,18 +88,18 @@ async def run_async_example():
     # Get economic event list asynchronously
     async for event_list in client.economic.a_event_list(country_iso_code="US", limit=5):
         print(event_list)
-    '''
+'''
     '''
     # Get economic event by date asynchronously
     event = await client.economic.a_event()
     print(event)
-    '''
+'''
 
     '''
     # Get economic latest event list asynchronously
     latest_events = await client.economic.a_latest_events(country_iso_code="us",date_type="upcoming")
     print(latest_events)
-    '''
+'''
 
     # ***************************************holiday***************************#
     '''

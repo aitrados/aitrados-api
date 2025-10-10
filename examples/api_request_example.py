@@ -1,8 +1,6 @@
 import os
-from aitrados_api import SchemaAsset
-from aitrados_api import ClientConfig, RateLimitConfig
-from aitrados_api import  DatasetClient
-from aitrados_api.common_lib.contant import IntervalName
+from aitrados_api import *
+
 
 config = ClientConfig(
     secret_key=os.getenv("AITRADOS_SECRET_KEY","YOUR_SECRET_KEY"),
@@ -23,7 +21,7 @@ params = {
     "interval": IntervalName.M60,
     "from_date": "2025-07-18T00:00:00+00:00",
     "to_date": "2025-09-05T23:59:59+00:00",
-    "format": "json",
+    "format": "csv",
     "limit": 30
 }
 #***************************************OHLC DATA***************************#
@@ -31,10 +29,21 @@ params = {
 ## Get historical OHLC data
 for ohlc in client.ohlc.ohlcs(**params):
     print(ohlc)
+
 '''
 # Get latest OHLC data.use for real-time data
 ohlc_latest=client.ohlc.ohlcs_latest(**params)
 print(ohlc_latest)
+
+rename_column_name_mapping={"interval":"timeframe",}
+filter_column_names=["datetime","timeframe","open","high","low","close","volume","close_datetime"]
+to_format=ApiListResultToFormatData(ohlc_latest,rename_column_name_mapping=rename_column_name_mapping,filter_column_names=filter_column_names,limit=None)
+pl_df=to_format.get_polars()
+pd_df=to_format.get_pandas()
+csv_string=to_format.get_csv()
+data_list=to_format.get_list()
+pass
+
 '''
 
 
@@ -75,8 +84,8 @@ event_codes= client.economic.event_codes(country_iso_code="US")
 # Get economic event list
 for event_list in  client.economic.event_list(country_iso_code="US",limit=5):
     print(event_list)
-'''
 
+'''
 '''
 # Get economic event by date
 event= client.economic.event()

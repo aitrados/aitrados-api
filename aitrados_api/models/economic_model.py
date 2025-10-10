@@ -22,6 +22,13 @@ LATEST_EVENT_LIST_REQUEST_DATA: Endpoint = Endpoint(
             description="Event code",
         ),
         EndpointParam(
+            name="impact",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.STRING,
+            required=False,
+            description="impact (low,medium,high)",
+        ),
+        EndpointParam(
             name="date_type",
             location=ParamLocation.QUERY,
             param_type=ParamType.STRING,
@@ -82,6 +89,13 @@ EVENT_LIST_REQUEST_DATA: Endpoint = Endpoint(
             param_type=ParamType.STRING,
             required=False,
             description="Event code",
+        ),
+        EndpointParam(
+            name="impact",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.STRING,
+            required=False,
+            description="impact (low,medium,high)",
         ),
         EndpointParam(
             name="source_id",
@@ -160,6 +174,13 @@ EVENT_REQUEST_DATA: Endpoint = Endpoint(
             param_type=ParamType.STRING,
             required=False,
             description="Event code",
+        ),
+        EndpointParam(
+            name="impact",
+            location=ParamLocation.QUERY,
+            param_type=ParamType.STRING,
+            required=False,
+            description="impact (low,medium,high)",
         ),
         EndpointParam(
             name="source_id",

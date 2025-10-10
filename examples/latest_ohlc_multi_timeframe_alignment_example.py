@@ -84,7 +84,7 @@ if __name__ == "__main__":
         },
         name="multi_timeframe"
     )
-
+    pass
     # Add multiple symbols with multiple timeframes
     latest_ohlc_multi_timeframe_manager.add_item(
         item_data={

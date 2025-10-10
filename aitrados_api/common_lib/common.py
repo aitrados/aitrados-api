@@ -1,3 +1,6 @@
+import asyncio
+import os
+
 from loguru import logger
 
 import pandas as pd
@@ -6,6 +9,17 @@ import polars as pl
 from aitrados_api.common_lib.contant import ChartDataFormat
 
 
+def run_asynchronous_function(func):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:  # 'RuntimeError: There is no current event loop...'
+        loop = None
+
+    if loop and loop.is_running():
+
+        loop.create_task(func)
+    else:
+        asyncio.run(func)
 def get_full_symbol(data: dict | list[dict] | pd.DataFrame | pl.DataFrame)->str:
     if isinstance(data, pd.DataFrame):
         if not all(col in data.columns for col in ["asset_schema", "country_iso_code", "symbol"]):
@@ -42,7 +56,7 @@ def get_full_symbol(data: dict | list[dict] | pd.DataFrame | pl.DataFrame)->str:
 
 
 def to_format_data(df: pl.DataFrame, data_format: str,is_copy=True) -> str | list | dict | pd.DataFrame | pl.DataFrame:
-    # 优化：以 Polars DataFrame 为基础进行格式转换
+
     if data_format == ChartDataFormat.CSV:
         return df.write_csv()
     elif data_format == ChartDataFormat.DICT:
@@ -56,7 +70,8 @@ def to_format_data(df: pl.DataFrame, data_format: str,is_copy=True) -> str | lis
     else:
         raise ValueError(f"Unsupported data format: {data_format}")
 
-def split_full_symbol(full_symbol:str):
-    #至少2个:
-
-    schema_asset, country_symbol = full_symbol.split(":", 1)
+def is_debug():
+    string=os.getenv("DEBUG","false").lower()
+    if string in ["1","true"]:
+        return True
+    return False

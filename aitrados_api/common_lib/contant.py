@@ -106,3 +106,16 @@ class ChartDataFormat:
             cls.PANDAS,
             cls.POLARS
         ]
+class EventImpact:
+    LOW = "low"
+    MEDIUM="medium"
+    HIGH = "high"
+    ALL = "all"
+    @classmethod
+    def get_array(cls):
+        return [
+            cls.LOW,
+            cls.MEDIUM,
+            cls.HIGH,
+            cls.ALL
+        ]

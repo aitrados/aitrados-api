@@ -1,3 +1,4 @@
+import threading
 from typing import Dict, List
 from threading import RLock
 
@@ -7,18 +8,25 @@ from aitrados_api.common_lib.common import get_full_symbol, to_format_data
 from aitrados_api.common_lib.contant import IntervalName, ChartDataFormat
 
 import polars as pl
+
+from aitrados_api.latest_ohlc_chart_flow.latest_ohlc_chart_flow_manager import LatestOhlcChartFlowManager
+
+
 class LatestOhlcMultiTimeframeAlignment:
 
     def __init__(self,
                  multi_timeframe_callback: callable,
+                 latest_symbol_charting_manager: LatestOhlcChartFlowManager,
                  name:str="default",
                  data_format=ChartDataFormat.POLARS,
 
                  ):
         self.multi_timeframe_callback = multi_timeframe_callback
+        self.latest_symbol_charting_manager=latest_symbol_charting_manager
         self.data_format = data_format
         self.name=name
         self.timeframe_data:Dict[str,Dict[str,dict]]={}
+        self.__last_push_datatime=None
         self._lock = RLock()
 
 
@@ -68,9 +76,27 @@ class LatestOhlcMultiTimeframeAlignment:
                 if interval not in self.timeframe_data[full_symbol]:
                     self.timeframe_data[full_symbol][interval] = {"is_eth":is_eth}
             self.resort_timeframes(full_symbol)
-            #print(self.timeframe_data)
+            threading.Thread(target=self.__init_cache_data).start()
             return True
+    def __init_cache_data(self):
+        with self._lock:
+            for full_symbol,items in self.timeframe_data.items():
+                for interval,info in items.items():
+                    is_eth=info["is_eth"]
+                    if "df"  in info:
+                        continue
+                    try:
+                        obj=self.latest_symbol_charting_manager.symbol_charting_list[full_symbol][(interval, is_eth)]
+                        if obj.df is not None and len(obj.df)>0:
+                            self.receive_ohlc_data(obj.df.clone())
+                    except Exception as e:
 
+                        pass
+
+
+
+
+        pass
     def __is_multi_symbol_multi_timeframe_align(self) -> bool:
         """
         Implements a global time alignment check.
@@ -101,7 +127,9 @@ class LatestOhlcMultiTimeframeAlignment:
         # 3. Check 2: Put all time points into a set. If the set size is > 1, it means the time points are not aligned
         if len(set(all_datetimes)) > 1:
             return False
-
+        # 4. Check 3: Prevent pushing duplicate data for the same time point
+        if self.__last_push_datatime and all_datetimes[0]==self.__last_push_datatime:
+            return False
         # All checks passed, global alignment is complete
         return True
     def __get_pushed_data(self) -> Dict[str, List[str | list | pl.DataFrame | pd.DataFrame]] | None:
@@ -134,6 +162,8 @@ class LatestOhlcMultiTimeframeAlignment:
         interval=interval.upper()
         last_close_datetime=df["close_datetime"][-1]
         is_updated=False
+
+
         with self._lock:
             try:
                 info=self.timeframe_data[full_symbol][interval]
@@ -142,6 +172,9 @@ class LatestOhlcMultiTimeframeAlignment:
                 is_updated=True
             except KeyError:
                 pass
+
+
+
         if not is_updated:
             return
 

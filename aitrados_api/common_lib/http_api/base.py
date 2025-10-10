@@ -33,7 +33,8 @@ from aitrados_api.models.base_model import Endpoint,APIVersion
 T = TypeVar("T", bound=BaseModel)
 
 
-from aitrados_api.common_lib.common import logger
+from aitrados_api.common_lib.common import logger, run_asynchronous_function
+
 
 class BaseClient:
     def __init__(self, config: ClientConfig) -> None:
@@ -85,16 +86,7 @@ class BaseClient:
         """
         if hasattr(self, "client") and self.client is not None:
             self.client.close()
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:  # 'RuntimeError: There is no current event loop...'
-            loop = None
-
-        if loop and loop.is_running():
-
-            loop.create_task(self.aclose())
-        else:
-            asyncio.run(self.aclose())
+        run_asynchronous_function(self.aclose())
 
     async def aclose(self) -> None:
         """Asynchronously closes the HTTP clients."""
