@@ -7,13 +7,13 @@
 
 Our core philosophy is to provide a seamless data engine that elevates your analysis from a single asset to a panoramic view of the entire market ecosystem. By integrating **Effortless Real-Time OHLC Chart Flows**, **Professional-Grade Multi-Symbol, Multi-Timeframe (MSMTF) Time Alignment**, and **AI-Powered Fusion Analysis** (combining K-line, news, and economic events), `aitrados-dataset-api` provides an unprecedented data foundation for sophisticated algorithmic trading.
 
-**Github**: [https://github.com/aitrados/dataset-api](https://github.com/aitrados/dataset-api)
+**Github**: [https://github.com/aitrados/aitrados-api](https://github.com/aitrados/aitrados-api)
 
-**EXAMPLES**: [https://github.com/aitrados/dataset-api/tree/main/examples](https://github.com/aitrados/dataset-api/tree/main/examples)
+**EXAMPLES**: [https://github.com/aitrados/aitrados-api/tree/main/examples](https://github.com/aitrados/aitrados-api/tree/main/examples)
 
 **DOCS**: [https://docs.aitrados.com/en/docs/api/quickstart/](https://docs.aitrados.com/en/docs/api/quickstart/)  
 
-**OFFLINE DOCS**: [https://github.com/aitrados/dataset-api/tree/main/docs/api](https://github.com/aitrados/dataset-api/tree/main/docs/api)  
+**OFFLINE DOCS**: [https://github.com/aitrados/aitrados-api/tree/main/docs/api](https://github.com/aitrados/aitrados-api/tree/main/docs/api)  
 
 **FREE GAIN SECRET KEY**:[https://www.aitrados.com/](https://www.aitrados.com/)  
 

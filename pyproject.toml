@@ -60,10 +60,10 @@ dependencies = [
 # --- Project URLs ---
 # These links will be displayed on your PyPI project page.
 [project.urls]
-"Homepage" = "https://github.com/aitrados/dataset-api"
-"Bug Tracker" = "https://github.com/aitrados/dataset-api/issues"
-"Repository" = "https://github.com/aitrados/dataset-api"
-"Documentation" = "https://github.com/aitrados/dataset-api"
+"Homepage" = "https://github.com/aitrados/aitrados-api"
+"Bug Tracker" = "https://github.com/aitrados/aitrados-api/issues"
+"Repository" = "https://github.com/aitrados/aitrados-api"
+"Documentation" = "https://github.com/aitrados/aitrados-api"
 
 [tool.hatch.build.targets.wheel]
 packages = ["aitrados_api"]

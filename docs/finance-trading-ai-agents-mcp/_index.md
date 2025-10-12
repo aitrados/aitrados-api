@@ -1,6 +1,6 @@
 ---
-title: "Finance api"
-weight: 20
+title: "Finance AI Agents MCP"
+weight: 500
 
 tags: ["OHLC", "Real-time", "Streaming", "WebSocket",  "Python"]
 ---

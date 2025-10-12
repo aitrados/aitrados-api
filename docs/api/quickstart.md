@@ -17,10 +17,10 @@ tags: ["Beginners", "API", "Python","Real-time", "Streaming","OHLC","Multi-Symbo
 `aitrados-dataset-api` is the official Python client for the AiTrados data platform, **specifically designed for AI quantitative trading/training**. Our API helps you easily integrate **Pure price ohlc multi-symbol,multi-timeframe technical analysis** with **real-time news and economic events**.
 
 {{< alert context="info" >}}
-Complete documentation is available at  https://github.com/aitrados/dataset-api 
+Complete documentation is available at  https://github.com/aitrados/aitrados-api
 {{< /alert >}}
 
-https://github.com/aitrados/dataset-api 
+https://github.com/aitrados/aitrados-api
 
 ## Installation
 
@@ -34,7 +34,7 @@ pip install aitrados-api
 ## Get EXAMPLES
 
 
-[https://github.com/aitrados/dataset-api/tree/main/examples](https://github.com/aitrados/dataset-api/tree/main/examples)
+[https://github.com/aitrados/aitrados-api/tree/main/examples](https://github.com/aitrados/aitrados-api/tree/main/examples)
 
 
 ## Register for Free Access
