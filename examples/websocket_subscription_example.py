@@ -1,7 +1,7 @@
 import json
 import os
 import signal
-
+from time import sleep
 
 from aitrados_api.common_lib.common import logger
 
@@ -9,6 +9,10 @@ from aitrados_api import SubscribeEndpoint
 from aitrados_api import WebSocketClient
 
 
+
+def error_handle_msg(client: WebSocketClient, message):
+    # print("Received message:", message)
+    pass
 def handle_msg(client: WebSocketClient, message):
     # print("Received message:", message)
     pass
@@ -51,7 +55,7 @@ def auth_handle_msg(client: WebSocketClient, message):
     client.subscribe_event('US:*', 'CN:*', 'UK:*', 'EU:*', 'AU:*', 'CA:*', 'DE:*', 'FR:*', 'JP:*', 'CH:*')
 
 
-client = WebSocketClient(
+ws_client = WebSocketClient(
     secret_key=os.getenv("AITRADOS_SECRET_KEY","YOUR_SECRET_KEY"),
     is_reconnect=True,
 
@@ -61,19 +65,22 @@ client = WebSocketClient(
     ohlc_handle_msg=ohlc_handle_msg,
     show_subscribe_handle_msg=show_subscribe_handle_msg,
     auth_handle_msg=auth_handle_msg,
+    error_handle_msg=error_handle_msg,
     endpoint=SubscribeEndpoint.DELAYED,
     debug=True
 )
 
 
 def signal_handler(sig, frame):
-    client.close()
+    ws_client.close()
 
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
-    client.run(is_thread=False)
-    '''
+    #ws_client.subscribe_ohlc_1m("STOCK:US:*", "CRYPTO:GLOBAL:*", "FOREX:GLOBAL:*")
+
+    ws_client.run(is_thread=True)
+
     while True:
         sleep(2)
-    '''
+

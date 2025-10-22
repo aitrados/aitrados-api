@@ -27,9 +27,6 @@ from aitrados_api.common_lib.response_format import UnifiedResponse, ErrorRespon
 from aitrados_api.models.base_model import Endpoint,APIVersion
 
 
-
-
-
 T = TypeVar("T", bound=BaseModel)
 
 
@@ -54,6 +51,7 @@ class BaseClient:
                 requests_per_minute=self.config.rate_limit.requests_per_minute,
             )
         )
+
 
     def _setup_http_client(self) -> None:
         """

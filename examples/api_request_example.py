@@ -25,10 +25,12 @@ params = {
     "limit": 30
 }
 #***************************************OHLC DATA***************************#
-'''
+
 ## Get historical OHLC data
+
 for ohlc in client.ohlc.ohlcs(**params):
     print(ohlc)
+
 
 '''
 # Get latest OHLC data.use for real-time data
@@ -43,7 +45,7 @@ pd_df=to_format.get_pandas()
 csv_string=to_format.get_csv()
 data_list=to_format.get_list()
 pass
-
+'''
 '''
 
 

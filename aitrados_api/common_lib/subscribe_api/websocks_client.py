@@ -1,6 +1,7 @@
 import asyncio
 import threading
 import traceback
+from threading import RLock
 from typing import Callable, Dict
 
 import websockets
@@ -9,9 +10,16 @@ import json
 from aitrados_api.common_lib.common import logger, run_asynchronous_function
 
 from aitrados_api.common_lib.contant import SubscribeEndpoint
+from aitrados_api.trade_middleware.publisher import async_publisher_instance
 
 
 class WebSocketClientMixin:
+    def __init__(self):
+        # When ws is not connected, cache first and then submit
+        self.__pre_requests = []
+        self._run_fun_ran = False
+        self._lock = RLock()
+
     def _sync_to_async(self,func,*args,**kwargs):
         try:
             loop = asyncio.get_running_loop()
@@ -21,6 +29,13 @@ class WebSocketClientMixin:
             loop.create_task(func(*args,**kwargs))
         else:
             asyncio.run(func(*args,**kwargs))
+
+
+
+
+
+
+
     async def _execute_callback(self,callback,*args,**kwargs):
         if not callback:
             return None
@@ -29,13 +44,42 @@ class WebSocketClientMixin:
         else:
             callback(*args,**kwargs)
 
+
+
+    async def _trade_middleware_publish(self,msg, common_msg):
+        """
+        "on_event"
+        "on_news"
+        "on_ohlc"
+        "on_show_subscribe"
+        "on_authenticate"
+        "on_error",
+        "on_handle_msg"
+        """
+        message_type=common_msg.get("message_type")
+        if not message_type:
+            return
+
+        message_type=f"on_{message_type}"
+
+        await async_publisher_instance.a_send_topic(message_type,msg)
+        await async_publisher_instance.a_send_topic("on_handle_msg", common_msg)
+
+
+
+
+
+
     async def callback(self, callback, msg, common_msg):
         async def internal_callback():
             await self._execute_callback(callback, self, msg)
             await self._execute_callback(self.handle_msg, self, common_msg)
+            await self._trade_middleware_publish(msg, common_msg)
 
 
         asyncio.create_task(internal_callback())
+
+
 
     def check_subscription_topic(self,subscribe_type,topic:str)->bool:
         if not self.authorized:
@@ -45,6 +89,20 @@ class WebSocketClientMixin:
 
         return False
 
+    def _save_pre_request(self,fun,*args,**kwargs):
+            with self._lock:
+                _request={
+                    "fun":fun,
+                    "args":args,
+                    "kwargs":kwargs
+                }
+                if _request not in self.__pre_requests:
+                    self.__pre_requests.append(_request)
+    async def _execute_pre_requests(self):
+        for req in list(self.__pre_requests):
+            await req["fun"](*req["args"],**req["kwargs"])
+        self.__pre_requests.clear()
+        pass
 
 class WebSocketClient(WebSocketClientMixin):
     RE_SUBSCRIBE_TYPES=[
@@ -62,6 +120,9 @@ class WebSocketClient(WebSocketClientMixin):
                     ohlc_handle_msg:Callable=None,
                     show_subscribe_handle_msg:Callable=None,
                     auth_handle_msg:Callable=None,
+                    error_handle_msg: Callable = None,
+
+
                     endpoint:str=SubscribeEndpoint.REALTIME,
                     debug:bool=False
                  ):
@@ -79,6 +140,7 @@ class WebSocketClient(WebSocketClientMixin):
         self.ohlc_handle_msg = ohlc_handle_msg
         self.show_subscribe_handle_msg = show_subscribe_handle_msg
         self.auth_handle_msg = auth_handle_msg
+        self.error_handle_msg=error_handle_msg
 
 
 
@@ -94,7 +156,15 @@ class WebSocketClient(WebSocketClientMixin):
         self.uri=None
         self.debug=debug
 
+
+
         self.init_data(endpoint)
+
+
+
+
+        super().__init__()
+
 
 
     def init_data(self,endpoint:str=None,secret_key:str=None):
@@ -106,6 +176,8 @@ class WebSocketClient(WebSocketClientMixin):
         if self.secret_key == "YOUR_SECRET_KEY":
             logger.error("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY")
             raise ValueError("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY")
+        from aitrados_api.trade_middleware_service.trade_middleware_service_instance import AitradosApiServiceInstance
+        AitradosApiServiceInstance.ws_client = self
 
 
     def close(self):
@@ -140,7 +212,7 @@ class WebSocketClient(WebSocketClientMixin):
 
     async def a_unsubscribe_ohlc_1m(self,*topics):
         if not topics or not self.authorized:
-            return None
+            return "subscribed"
         subscribe_payload = {
             "message_type": "unsubscribe",
             "params": {
@@ -151,9 +223,10 @@ class WebSocketClient(WebSocketClientMixin):
         await self.websocket.send(json.dumps(subscribe_payload))
         if self.debug:
             logger.info("--> sent ohlc unsubscribe request")
+        return "unsubscribing"
     async def a_unsubscribe_news(self,*topics):
         if not topics or not self.authorized:
-            return None
+            return "subscribed"
         news_subscribe_payload={
             "message_type": "unsubscribe",
             "params": {
@@ -164,10 +237,10 @@ class WebSocketClient(WebSocketClientMixin):
         await self.websocket.send(json.dumps(news_subscribe_payload))
         if self.debug:
             logger.info("--> sent news unsubscribe request")
-
+        return "unsubscribing"
     async def a_unsubscribe_event(self,*topics):
         if not topics or not self.authorized:
-            return None
+            return "subscribed"
         event_subscribe_payload = {
             "message_type": "unsubscribe",
             "params": {
@@ -178,11 +251,21 @@ class WebSocketClient(WebSocketClientMixin):
         await self.websocket.send(json.dumps(event_subscribe_payload))
         if self.debug:
             logger.info("--> sent event unsubscribe request")
+        return "unsubscribing"
+
+
+    async def a_get_all_subscribed_topics(self, *topics):
+        return self.all_subscribed_topics
 
 
     async def a_subscribe_ohlc_1m(self,*topics):
-        if not topics or not self.authorized:
-            return None
+        if not topics :
+            return "subscribed"
+        if not self.authorized:
+            self._save_pre_request(self.a_subscribe_ohlc_1m,*topics)
+            if not self._run_fun_ran:
+                self.run(is_thread=True,is_external_request=False)
+            return "authorizing"
         subscribe_payload = {
             "message_type": "subscribe",
             "params": {
@@ -192,13 +275,18 @@ class WebSocketClient(WebSocketClientMixin):
         }
         await self.websocket.send(json.dumps(subscribe_payload))
         if self.debug:
-            logger.info("--> sent ohlc sub request")
-
+            logger.info(f"--> sent ohlc sub request : {list(topics)}")
+        return "subscribing"
 
 
     async def a_subscribe_news(self,*topics):
-        if not topics or not self.authorized:
-            return None
+        if not topics :
+            return "subscribed"
+        if not self.authorized:
+            self._save_pre_request(self.a_subscribe_ohlc_1m,*topics)
+            if not self._run_fun_ran:
+                self.run(is_thread=True,is_external_request=False)
+            return "authorizing"
         news_subscribe_payload={
             "message_type": "subscribe",
             "params": {
@@ -209,10 +297,16 @@ class WebSocketClient(WebSocketClientMixin):
         await self.websocket.send(json.dumps(news_subscribe_payload))
         if self.debug:
             logger.info("--> sent news sub request")
+        return "subscribing"
 
     async def a_subscribe_event(self,*topics):
-        if not topics or not self.authorized:
-            return None
+        if not topics :
+            return "subscribed"
+        if not self.authorized:
+            self._save_pre_request(self.a_subscribe_ohlc_1m,*topics)
+            if not self._run_fun_ran:
+                self.run(is_thread=True,is_external_request=False)
+            return "authorizing"
         event_subscribe_payload = {
             "message_type": "subscribe",
             "params": {
@@ -223,6 +317,7 @@ class WebSocketClient(WebSocketClientMixin):
         await self.websocket.send(json.dumps(event_subscribe_payload))
         if self.debug:
             logger.info("--> sent event sub request")
+        return "subscribing"
 
 
 
@@ -269,8 +364,8 @@ class WebSocketClient(WebSocketClientMixin):
                         logger.error("--- ❌ Authentication failed ---")
 
                 elif message.get("message_type") == "error":
-                    await self._execute_callback(self.show_subscribe_handle_msg,message)
-                    #logger.error(f"❌ SERVER ERROR: {message.get('message')} - {message.get('detail', '')}")
+                    await self.callback(self.error_handle_msg,message, message)
+                    logger.error(f"❌ SERVER ERROR: {message.get('message')} - {message.get('detail', '')}")
 
                 else:
                     if self.debug:
@@ -301,6 +396,9 @@ class WebSocketClient(WebSocketClientMixin):
                         await self.a_subscribe_news(*topics)
                     case "event":
                         await self.a_subscribe_event(*topics)
+
+
+
     async def __connect(self,is_reconnect=False):
 
         try:
@@ -330,8 +428,9 @@ class WebSocketClient(WebSocketClientMixin):
                     if  not (self.is_re_subscribe and is_reconnect):
                         await self.callback(self.auth_handle_msg,auth_response,auth_response)
                     await self.resubscribe_all()
-
+                    await self._execute_pre_requests()
                     await self.__message_event()
+
 
 
                 else:
@@ -346,7 +445,14 @@ class WebSocketClient(WebSocketClientMixin):
         finally:
             self.authorized=False
             self.websocket = None
-    def run(self,is_thread=False):
+    def run(self,is_thread=False,is_external_request=True):
+        if is_external_request and self._run_fun_ran:
+            logger.warning("Execution of 'ws_client.run()' was skipped because the Aitrados WebSocket client had already been started when the WebSocket request was preconfigured.")
+            return "Execution of 'ws_client.run()' was skipped because the Aitrados WebSocket client had already been started when the WebSocket request was preconfigured."
+
+        with self._lock:
+            self._run_fun_ran=True
+
         if self.is_reconnect:
             if not is_thread:
                 #run_asynchronous_function

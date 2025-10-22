@@ -16,6 +16,7 @@ class EconomicRequest(RequestBaseMixin):
                    limit: int | None = 100,
                    format: str | None = "json",
                    next_page_key:str=None,
+
                    ):
 
         params = {
@@ -36,6 +37,7 @@ class EconomicRequest(RequestBaseMixin):
             redata, next_page_key = self._common_requests.common_iterate_list(EVENT_LIST_REQUEST_DATA, params=params)
 
             yield redata
+
             if next_page_key:
                 params["next_page_key"] = next_page_key
             else:
@@ -52,6 +54,7 @@ class EconomicRequest(RequestBaseMixin):
                            limit: int | None = 100,
                            format: str | None = "json",
                            next_page_key: str = None,
+
                            ):
         params = {
             "country_iso_code": country_iso_code,
@@ -69,6 +72,7 @@ class EconomicRequest(RequestBaseMixin):
             redata, next_page_key = await self._common_requests.a_common_iterate_list(EVENT_LIST_REQUEST_DATA,
                                                                                       params=params)
             yield redata
+
             if next_page_key:
                 params["next_page_key"] = next_page_key
             else:

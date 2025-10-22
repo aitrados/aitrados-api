@@ -1,12 +1,22 @@
 import asyncio
 import os
+from typing import List
 
 from loguru import logger
+
+logger.remove()
+logger.add(
+    sink=lambda message: print(message, end=""),
+    format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <level>{message}</level>",
+    colorize=True
+)
+
+
 
 import pandas as pd
 import polars as pl
 
-from aitrados_api.common_lib.contant import ChartDataFormat
+from aitrados_api.common_lib.contant import ChartDataFormat, IntervalName, SchemaAsset
 
 
 def run_asynchronous_function(func):
@@ -20,6 +30,42 @@ def run_asynchronous_function(func):
         loop.create_task(func)
     else:
         asyncio.run(func)
+def get_real_interval(interval:str):
+    array=IntervalName.get_array()
+
+    if not interval:
+        raise ValueError(f"Invalid interval format. Expected '{array}'.")
+    interval=interval.upper()
+    if interval not in array:
+        raise ValueError(f"Invalid interval format. Expected '{array}'.")
+    return interval
+def get_real_intervals(intervals:List[str]):
+    new_intervals=[]
+    array = IntervalName.get_array()
+    if not intervals:
+        raise ValueError(f"Invalid intervals format. Expected value in  '{array}'.")
+
+    intervals=set(intervals)
+
+    for  interval in intervals:
+        new_intervals.append(get_real_interval(interval))
+    return new_intervals
+
+def split_full_symbol(full_symbol:str):
+    if not isinstance(full_symbol, str) or full_symbol.count(':') < 2:
+        raise ValueError(f"Invalid full_symbol ({full_symbol}) format. Expected 'ASSET_NAME:COUNTRY_ISO_CODE:SYMBOL'.")
+    full_symbol=full_symbol.upper()
+    asset_name, country_symbol = full_symbol.split(':', 1)
+    if asset_name.lower() not in SchemaAsset.get_array():
+        raise ValueError(f"Invalid asset name: '{asset_name}' of '{full_symbol}'. Expected one of {SchemaAsset.get_array()}.")
+    return asset_name, country_symbol
+def get_fixed_full_symbol(full_symbol:str):
+    asset_name, country_symbol=split_full_symbol(full_symbol)
+    standard_full_symbol_key = f"{asset_name}:{country_symbol}"
+    return standard_full_symbol_key
+
+
+
 def get_full_symbol(data: dict | list[dict] | pd.DataFrame | pl.DataFrame)->str:
     if isinstance(data, pd.DataFrame):
         if not all(col in data.columns for col in ["asset_schema", "country_iso_code", "symbol"]):
@@ -75,3 +121,19 @@ def is_debug():
     if string in ["1","true"]:
         return True
     return False
+def get_env_bool_value(env_key):
+    string=os.getenv(env_key,"false").lower()
+    if string in ["1","true"]:
+        return True
+    return False
+
+def get_env_value(env_key,default_value=None):
+    value=os.getenv(env_key, default_value)
+    try:
+        value=int(value)
+    except:
+        try:
+            value = float(value)
+        except:
+            pass
+    return value

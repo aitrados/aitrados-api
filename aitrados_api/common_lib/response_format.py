@@ -1,3 +1,4 @@
+import json
 from typing import TypeVar, Generic, Optional, Any
 
 from pydantic import BaseModel
@@ -17,3 +18,33 @@ class ErrorResponse(BaseModel):
     message: str
     reference: Optional[Any] = None
     detail: Optional[Any] = None
+
+
+
+
+
+class WsUnifiedResponse(UnifiedResponse):
+    message_type: str
+
+class WsErrorResponse(ErrorResponse):
+    message_type: str
+
+def get_standard_response(data:str|dict|UnifiedResponse|ErrorResponse|WsUnifiedResponse|WsErrorResponse)->UnifiedResponse|ErrorResponse|WsUnifiedResponse|WsErrorResponse:
+    if isinstance(data,UnifiedResponse|ErrorResponse|WsUnifiedResponse|WsErrorResponse):
+        return data
+    try:
+        if isinstance(data, str):
+            data=json.loads(data)
+        if isinstance(data, dict):
+            for cls in [UnifiedResponse,ErrorResponse,WsUnifiedResponse,WsErrorResponse]:
+                try:
+                    return cls(**data)
+                except:
+                    pass
+
+
+    except:
+        return None
+
+
+

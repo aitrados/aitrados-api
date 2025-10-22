@@ -13,7 +13,9 @@ class HolidayRequest(RequestBaseMixin):
                      sort: str | None = "asc",
                      limit: int | None = 100,
                      format: str | None = "json",
-                     next_page_key: str | None = None, ):
+                     next_page_key: str | None = None,
+
+                     ):
 
         params = {
             "full_symbol": full_symbol,
@@ -29,6 +31,7 @@ class HolidayRequest(RequestBaseMixin):
             redata, next_page_key = self._common_requests.common_iterate_list(HOLIDAY_LIST_REQUEST_DATA, params=params)
 
             yield redata
+
             if next_page_key:
                 params["next_page_key"] = next_page_key
             else:
@@ -42,7 +45,8 @@ class HolidayRequest(RequestBaseMixin):
                              sort: str | None = "asc",
                              limit: int | None = 100,
                              format: str | None = "json",
-                             next_page_key: str | None = None, ):
+                             next_page_key: str | None = None,
+                             ):
         params = {
             "full_symbol": full_symbol,
             "holiday_code": holiday_code,
@@ -57,6 +61,7 @@ class HolidayRequest(RequestBaseMixin):
             redata, next_page_key = await self._common_requests.a_common_iterate_list(HOLIDAY_LIST_REQUEST_DATA,
                                                                                       params=params)
             yield redata
+
             if next_page_key:
                 params["next_page_key"] = next_page_key
             else:

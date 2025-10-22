@@ -70,7 +70,8 @@ class DatasetClient(BaseClient):
 
             super().__init__(self._config)
             self._initialized = True
-
+            from aitrados_api.trade_middleware_service.trade_middleware_service_instance import AitradosApiServiceInstance
+            AitradosApiServiceInstance.api_client=self
         except Exception as e:
 
 
@@ -113,6 +114,7 @@ class DatasetClient(BaseClient):
 
     def close(self) -> None:
         """Clean up resources"""
+        self._initialized: bool = False
         try:
             if hasattr(self, "client") and self.client is not None:
                 self.client.close()

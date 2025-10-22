@@ -44,7 +44,10 @@ class ReferenceRequest(RequestBaseMixin):
                       strike_price: float = None,
                       expiration_date: str = None,
                       limit: int = 100,
-                      sort_by: str = None):
+                      sort_by: str = None,
+                      next_page_key: str | None = None,
+
+                      ):
         """
         Function to search options based on various parameters.
 
@@ -68,7 +71,8 @@ class ReferenceRequest(RequestBaseMixin):
             "strike_price": strike_price,
             "expiration_date": expiration_date,
             "limit": limit,
-            "sort_by": sort_by
+            "sort_by": sort_by,
+            "next_page_key": next_page_key
         }
         while True:
             redata, next_page_key = self._common_requests.common_iterate_list(OPTION_SEARCH_REQUEST_DATA, params=params)
@@ -88,7 +92,10 @@ class ReferenceRequest(RequestBaseMixin):
                               strike_price: float = None,
                               expiration_date: str = None,
                               limit: int = 100,
-                              sort_by: str = None):
+                              sort_by: str = None,
+                              next_page_key: str | None = None,
+
+                              ):
         """
         Asynchronously searches options based on various parameters.
         """
@@ -101,12 +108,14 @@ class ReferenceRequest(RequestBaseMixin):
             "strike_price": strike_price,
             "expiration_date": expiration_date,
             "limit": limit,
-            "sort_by": sort_by
+            "sort_by": sort_by,
+            "next_page_key": next_page_key
         }
         while True:
             redata, next_page_key = await self._common_requests.a_common_iterate_list(OPTION_SEARCH_REQUEST_DATA,
                                                                                       params=params)
             yield redata
+
             if next_page_key:
                 params["next_page_key"] = next_page_key
             else:
@@ -139,7 +148,11 @@ class ReferenceRequest(RequestBaseMixin):
         return await self._common_requests.a_get_general_request(OPTIONS_EXPIRATION_DATE_LIST_REQUEST_DATA,
                                                                  params=params)
 
-    def stock_corporate_action_list(self,country_symbol: str,from_date,action_type=None,to_date=None,format="json",limit=100,next_page_key=None):
+    def stock_corporate_action_list(self,country_symbol: str,from_date,action_type=None,to_date=None,format="json",limit=100,
+
+                                    next_page_key: str | None = None,
+
+                                    ):
 
         params = {
             "country_symbol": country_symbol,
@@ -156,13 +169,17 @@ class ReferenceRequest(RequestBaseMixin):
             redata, next_page_key = self._common_requests.common_iterate_list(STOCK_CORPORATE_ACTION_LIST_REQUEST_DATA, params=params)
 
             yield redata
+
             if next_page_key:
                 params["next_page_key"] = next_page_key
             else:
                 break
 
     async def a_stock_corporate_action_list(self, country_symbol: str, from_date, action_type=None, to_date=None,
-                                            format="json", limit=100, next_page_key=None):
+                                            format="json", limit=100,
+                                            next_page_key: str | None = None,
+
+                                            ):
         params = {
             "country_symbol": country_symbol,
             "action_type": action_type,
@@ -176,6 +193,7 @@ class ReferenceRequest(RequestBaseMixin):
             redata, next_page_key = await self._common_requests.a_common_iterate_list(
                 STOCK_CORPORATE_ACTION_LIST_REQUEST_DATA, params=params)
             yield redata
+
             if next_page_key:
                 params["next_page_key"] = next_page_key
             else:

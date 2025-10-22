@@ -34,6 +34,8 @@ async def run_async_example():
         print(ohlc)
     '''
 
+
+
     # Get latest OHLC data asynchronously. use for real-time data
     ohlc_latest = await client.ohlc.a_ohlcs_latest(**params)
     print(ohlc_latest)

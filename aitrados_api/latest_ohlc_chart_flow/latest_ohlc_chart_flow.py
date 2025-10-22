@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 import io
 
@@ -9,8 +10,9 @@ from aitrados_api.common_lib.contant import ChartDataFormat, IntervalName
 from aitrados_api.common_lib.http_api.data_client import DatasetClient
 import polars as pl
 
-from aitrados_api.common_lib.response_format import UnifiedResponse, ErrorResponse
+from aitrados_api.common_lib.response_format import UnifiedResponse, ErrorResponse, WsUnifiedResponse, WsErrorResponse
 from aitrados_api.latest_ohlc_chart_flow.ohlc_aggregation.ohlc_aggregation_minute import OhlcAggregationMinute
+from aitrados_api.trade_middleware.publisher import async_publisher_instance
 
 
 class LatestOhlcChartFlow:
@@ -46,8 +48,8 @@ class LatestOhlcChartFlow:
         self.df = temp_df
 
         return_data = to_format_data(self.df, self.data_format)
-        self.latest_ohlc_chart_flow_callback(return_data)
-
+        self.latest_ohlc_chart_flow_callback(data=return_data,full_symbol=self.full_symbol,interval=self.interval)
+        self._trade_middleware_publish(return_data,self.df)
     def __string_to_polars(self, api_result: UnifiedResponse | ErrorResponse) -> pl.DataFrame | None:
         df = None
 
@@ -199,14 +201,41 @@ class LatestOhlcChartFlow:
             format="csv",
 
         )
-        return_data = None
+
         if (df := self.__string_to_polars(ohlc_latest)) is None:
-            return return_data
+            if isinstance(ohlc_latest,UnifiedResponse):
+                result=ErrorResponse(message="no found latest ohlc data",reference={"full_symbol":self.full_symbol,"interval":self.interval})
+            else:
+                result=ohlc_latest
+
+            error_data=json.loads(result.model_dump_json())
+            temp_error_msg = WsErrorResponse(message_type="error",
+                                                **error_data).model_dump_json()
+
+
+            async_publisher_instance.send_topic("on_error", temp_error_msg)
+
+            return ohlc_latest
 
         self.df = df
         self.__fix_week_mon_data()
 
         return_data = to_format_data(self.df, self.data_format)
 
-        self.latest_ohlc_chart_flow_callback(return_data)
+        self.latest_ohlc_chart_flow_callback(data=return_data,full_symbol=self.full_symbol,interval=self.interval)
+        self._trade_middleware_publish( return_data,self.df)
         return return_data
+    def _trade_middleware_publish(self, data,df):
+        if not isinstance(data,str|dict|list):
+            data=to_format_data(df, ChartDataFormat.CSV)
+        return_data={
+            "full_symbol":self.full_symbol,
+            "interval":self.interval,
+            "data":data
+        }
+        temp_handle_msg = WsUnifiedResponse(message_type="ohlc_chart_flow_streaming",
+                                            result=return_data).model_dump_json()
+
+
+        async_publisher_instance.send_topic("on_ohlc_chart_flow_streaming", return_data)
+        async_publisher_instance.send_topic("on_handle_msg", temp_handle_msg)

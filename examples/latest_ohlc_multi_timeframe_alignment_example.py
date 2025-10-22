@@ -36,7 +36,7 @@ ws_client = WebSocketClient(
 )
 
 
-def multi_timeframe_callback(name, data: Dict[str, List[str | list | pl.DataFrame | pd.DataFrame]], **kwargs):
+def multi_timeframe_callback(name, data: Dict[str, List[str | list | pl.DataFrame | pd.DataFrame]], *args,**kwargs):
     print(f"==================Received data:{name}========================{datetime.datetime.now()}")
 
     for full_symbol, tf_data_list in data.items():

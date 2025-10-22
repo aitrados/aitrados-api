@@ -51,6 +51,11 @@ In quantitative trading, data is the source of alpha, but data management is oft
     *   Vast archives of historical financial news.
 
 
+## trade middleware (LOCAL RPC & SUB/PUB )
+
+We introduce zeromq middleware, you can completely split complex strategies into modules and programs. Through the middleware to implement complex communication data calls
+[SEE DOCS](https://docs.aitrados.com/en/docs/api/trade_middleware/overview/)  
+
 ## Installation
 
 You can install this library using pip:

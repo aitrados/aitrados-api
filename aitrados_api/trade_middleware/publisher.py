@@ -1,0 +1,3 @@
+from aitrados_api.trade_middleware.library.publisher_mixin import AsyncPublisher
+
+async_publisher_instance=AsyncPublisher()

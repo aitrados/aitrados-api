@@ -14,7 +14,9 @@ class OhlcRequest(RequestBaseMixin):
               format:str=ApiDataFormat.CSV,
               limit=150,
               sort=None,
-              is_eth=False #US stock extended hour
+              is_eth=False, #US stock extended hour
+              next_page_key: str | None = None,
+
               ):
 
 
@@ -27,14 +29,19 @@ class OhlcRequest(RequestBaseMixin):
             "format": format,
             "limit": limit,
             "sort": sort,
-            "is_eth":is_eth
+            "is_eth":is_eth,
+            "next_page_key":next_page_key
         }
 
         while True:
             redata, next_page_key = self._common_requests.common_iterate_list(OHLC_HISTORY_LIST_REQUEST_DATA,
                                                                               params=params)
 
+
+
+
             yield redata
+
             if next_page_key:
                 params["next_page_key"] = next_page_key
             else:
@@ -48,7 +55,8 @@ class OhlcRequest(RequestBaseMixin):
               format:str=ApiDataFormat.CSV,
               limit=150,
               sort=None,
-              is_eth=False #US stock extended hour
+              is_eth=False, #US stock extended hour
+              next_page_key: str | None = None,
               ):
 
 
@@ -61,7 +69,8 @@ class OhlcRequest(RequestBaseMixin):
             "format": format,
             "limit": limit,
             "sort": sort,
-            "is_eth":is_eth
+            "is_eth":is_eth,
+            "next_page_key":next_page_key
         }
 
         while True:

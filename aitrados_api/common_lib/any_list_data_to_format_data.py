@@ -1,9 +1,24 @@
-from typing import List
+import json
+from typing import List, Dict, Any
 import io
 import pandas as pd
 import polars as pl
 
-from aitrados_api.common_lib.response_format import UnifiedResponse, ErrorResponse
+from aitrados_api.common_lib.response_format import UnifiedResponse, ErrorResponse, get_standard_response, \
+    WsUnifiedResponse, WsErrorResponse
+
+
+class AnyToFormat:
+    CSV = "csv"
+    PANDAS = "pandas"
+    POLARS = "polars"
+    LIST = "list"
+    @classmethod
+    def get_array(cls):
+        return [cls.CSV, cls.PANDAS, cls.POLARS, cls.LIST]
+    @classmethod
+    def get_serialized_array(cls):
+        return [cls.CSV, cls.LIST]
 
 
 
@@ -12,6 +27,9 @@ class AnyListDataToFormatData:
                  rename_column_name_mapping: dict = None,
                  filter_column_names: List[str] = None,
                  limit: int = None):
+
+
+
         self.any_list_data = any_list_data
         self.rename_column_name_mapping = rename_column_name_mapping or {}
         self.filter_column_names = filter_column_names
@@ -21,6 +39,10 @@ class AnyListDataToFormatData:
         self._processed_data = None
         self._is_polars_native = False
         self._is_empty = False
+
+
+
+
         self._init_data()
 
     def _init_data(self):
@@ -177,6 +199,18 @@ class AnyListDataToFormatData:
         except Exception:
             return None
 
+    def get_data(self, to_format: str = "polars"):
+        if to_format == AnyToFormat.CSV:
+            return self.get_csv()
+        elif to_format == AnyToFormat.PANDAS:
+            return self.get_pandas()
+        elif to_format == AnyToFormat.POLARS:
+            return self.get_polars()
+        elif to_format == AnyToFormat.LIST:
+            return self.get_list()
+        else:
+            return self.get_csv()
+
 
 class ApiListResultToFormatData:
     def __init__(self, api_result: UnifiedResponse | ErrorResponse, rename_column_name_mapping: dict = None,
@@ -242,6 +276,54 @@ class ApiListResultToFormatData:
             return result
         return self.any_list_data_to_format_data.get_list()
 
+class ApiListResultToFormatData2(ApiListResultToFormatData):
+    def __init__(self, data: dict, rename_column_name_mapping: dict = None,
+                 filter_column_names: List[str] = None, limit=None):
+
+        if data["code"]==200:
+            api_result=UnifiedResponse(**data)
+        else:
+            api_result = ErrorResponse(**data)
+        super().__init__(api_result=api_result,
+                         rename_column_name_mapping=rename_column_name_mapping,
+                         filter_column_names=filter_column_names,
+                         limit=limit
+                         )
+
+
+def any_data_to_format_data( data: any,
+        rename_column_name_mapping: dict = None,
+        filter_column_names: List[str] = None,
+        limit: int = None,
+        to_format: str = "polars"):
+    if to_format not in AnyToFormat.get_array():
+        to_format = "polars"
+
+    def abc_to():
+        converter = AnyListDataToFormatData(
+            data,
+            rename_column_name_mapping=rename_column_name_mapping,
+            filter_column_names=filter_column_names,
+            limit=limit
+        )
+        return converter.get_data(to_format)
+    if isinstance(data,list | pl.DataFrame | pd.DataFrame):
+        return abc_to()
+
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except json.JSONDecodeError as e:
+            return abc_to()
+    if "code" in data and "status" in data:
+        response=get_standard_response(data)
+        if response.code!=200:
+            raise ValueError(f"{response}")
+        if isinstance(response.result,dict) and "data" in response.result:
+            data=response.result['data']
+        else:
+            data = response.result
+    return abc_to()
 
 
 
@@ -250,73 +332,89 @@ class ApiListResultToFormatData:
 
 
 
+def deserialize_multi_symbol_multi_timeframe_data(
+        data: dict | str,
+        rename_column_name_mapping: dict = None,
+        filter_column_names: List[str] = None,
+        limit: int = None,
+        to_format: str = "polars"
+) -> Dict[str, List[Any]]:
+    """
+    Unserialize multi-symbol multi-timeframe data from ZeroMQ message.
+
+    This function deserializes data received from ZeroMQ publisher, converting CSV strings
+    or other data formats back to the specified target format (polars, pandas, csv, or list).
+
+    Args:
+        msg: The message data, can be dict or JSON string containing symbol data
+        rename_column_name_mapping: Optional dictionary to rename columns during processing
+        filter_column_names: Optional list of column names to filter/select
+        limit: Optional limit on number of rows to return
+        to_format: Target format for conversion ("polars", "pandas", "csv", "list")
+
+    Returns:
+        Dictionary mapping full_symbol to list of converted data in specified format
+
+    Raises:
+        ValueError: If to_format is not supported or JSON parsing fails
+
+    Example:
+        >>> data = unserialize_multi_symbol_multi_timeframe_data(
+        ...     data='{"NASDAQ:AAPL": ["csv_data1", "csv_data2"]}',
+        ...     to_format="polars"
+        ... )
+        >>> # Returns: {"NASDAQ:AAPL": [polars_df1, polars_df2]}
+    """
+    # Validate target format
+    if to_format not in AnyToFormat.get_array():
+        to_format = "polars"
+
+    new_push_data = {}
+
+    # Parse JSON string if needed
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse JSON message: {e}")
 
 
+    if "code" in data and "status" in data:
+        response=get_standard_response(data)
+        if response.code!=200:
+            raise ValueError(f"Failed to parse JSON message: {response}")
+        if isinstance(response.result,dict) and "data" in response.result:
+            data=response.result['data']
+        else:
+            data = response.result
 
 
+    # Process each symbol's data
+    for full_symbol, data_list in data.items():
+        converted_data_list = []
 
+        for data in data_list:
+            try:
+                # Create converter instance with processing parameters
+                converter = AnyListDataToFormatData(
+                    data,
+                    rename_column_name_mapping=rename_column_name_mapping,
+                    filter_column_names=filter_column_names,
+                    limit=limit
+                )
+                converted_data = converter.get_data(to_format)
 
-class ApiListResultToFormatData:
-    def __init__(self,api_result:UnifiedResponse|ErrorResponse,rename_column_name_mapping:dict=None,filter_column_names:List[str]=None,limit=None):
-        self.api_result=api_result
-        self.list_data=None
-        self.is_empty_data=False
-        self.rename_column_name_mapping=rename_column_name_mapping
-        self.filter_column_names=filter_column_names
-        self.limit=limit
+                # Only append non-None results
+                if converted_data is not None:
+                    converted_data_list.append(converted_data)
 
-        self.any_list_data_to_format_data:AnyListDataToFormatData=None
+            except Exception as e:
+                # Log error but continue processing other data items
+                print(f"Warning: Failed to convert data for {full_symbol}: {e}")
+                continue
 
-        self.__init_data()
+        # Only include symbols that have successfully converted data
+        if converted_data_list:
+            new_push_data[full_symbol] = converted_data_list
 
-    def __init_data(self):
-        if not isinstance(self.api_result,UnifiedResponse):
-            return
-
-        if self.api_result.code != 200:
-            return
-        result=self.api_result.result
-        if "count" not in  result or  "data" not in result:
-            return
-
-        if not result["count"]:
-            self.is_empty_data=True
-            return
-
-
-        self.list_data = self.api_result.result["data"]
-        self.any_list_data_to_format_data=AnyListDataToFormatData(self.list_data, self.rename_column_name_mapping,self.filter_column_names,self.limit )
-
-
-    def __is_direct_result(self):
-        if self.is_empty_data:
-            return True,None
-        if not self.list_data:
-            return True,self.api_result
-
-        return False,None
-
-
-
-    def get_csv(self)->None | str|ErrorResponse:
-        is_direct,result= self.__is_direct_result()
-        if is_direct:
-            return result
-        return self.any_list_data_to_format_data.get_csv()
-
-
-    def get_pandas(self)->None|pd.DataFrame|ErrorResponse:
-        is_direct,result= self.__is_direct_result()
-        if is_direct:
-            return result
-        return self.any_list_data_to_format_data.get_pandas()
-    def get_polars(self)->None|pl.DataFrame|ErrorResponse:
-        is_direct, result = self.__is_direct_result()
-        if is_direct:
-            return result
-        return self.any_list_data_to_format_data.get_polars()
-    def get_list(self) -> None | list|ErrorResponse:
-        is_direct, result = self.__is_direct_result()
-        if is_direct:
-            return result
-        return self.any_list_data_to_format_data.get_list()
+    return new_push_data

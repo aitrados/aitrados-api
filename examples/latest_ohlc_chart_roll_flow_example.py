@@ -31,11 +31,11 @@ ws_client = WebSocketClient(
 )
 
 
-def latest_ohlc_chart_flow_callback(data: str | list | dict | pd.DataFrame | pl.DataFrame):
+def latest_ohlc_chart_flow_callback(data: str | list | dict | pd.DataFrame | pl.DataFrame,full_symbol: str, interval: str,**kwargs):
     if isinstance(data, list):
-        print("Received data:", json.dumps(data[-2:], indent=2))
+        print("Received data:",full_symbol,interval, json.dumps(data[-2:], indent=2))
     else:
-        print("Received data:", data)
+        print("Received data:",full_symbol,interval,data)
 
 
 latest_ohlc_chart_flow_manager = LatestOhlcChartFlowManager(

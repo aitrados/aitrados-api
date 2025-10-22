@@ -9,7 +9,9 @@ from aitrados_api.common_lib.contant import IntervalName, ChartDataFormat
 
 import polars as pl
 
+from aitrados_api.common_lib.response_format import WsUnifiedResponse
 from aitrados_api.latest_ohlc_chart_flow.latest_ohlc_chart_flow_manager import LatestOhlcChartFlowManager
+from aitrados_api.trade_middleware.publisher import async_publisher_instance
 
 
 class LatestOhlcMultiTimeframeAlignment:
@@ -17,18 +19,22 @@ class LatestOhlcMultiTimeframeAlignment:
     def __init__(self,
                  multi_timeframe_callback: callable,
                  latest_symbol_charting_manager: LatestOhlcChartFlowManager,
-                 name:str="default",
+                 original_name: str,
+                 name: str = None,
                  data_format=ChartDataFormat.POLARS,
 
                  ):
         self.multi_timeframe_callback = multi_timeframe_callback
-        self.latest_symbol_charting_manager=latest_symbol_charting_manager
+        self.latest_symbol_charting_manager = latest_symbol_charting_manager
         self.data_format = data_format
-        self.name=name
-        self.timeframe_data:Dict[str,Dict[str,dict]]={}
-        self.__last_push_datatime=None
-        self._lock = RLock()
+        self.original_name = original_name
+        self.name = name if name else self.original_name
+        self.timeframe_data: Dict[str, Dict[str, dict]] = {}
+        self.__last_push_datatime = None
 
+
+
+        self._lock = RLock()
 
     def resort_timeframes(self, full_symbol: str) -> bool:
         with self._lock:
@@ -56,16 +62,14 @@ class LatestOhlcMultiTimeframeAlignment:
             # Create a new dictionary from the sorted items to ensure order
             self.timeframe_data[full_symbol] = dict(sorted_items)
 
-
-
             return True
-    def add_full_symbol(self, full_symbol, *intervals,is_eth=False):
+
+    def add_full_symbol(self, full_symbol, *intervals, is_eth=False):
         with self._lock:
             if len(intervals) == 0:
                 return False
 
             full_symbol = full_symbol.upper()
-
 
             if full_symbol not in self.timeframe_data:
                 self.timeframe_data[full_symbol] = {}
@@ -74,29 +78,28 @@ class LatestOhlcMultiTimeframeAlignment:
                 if not IntervalName.is_in_array(interval):
                     continue
                 if interval not in self.timeframe_data[full_symbol]:
-                    self.timeframe_data[full_symbol][interval] = {"is_eth":is_eth}
+                    self.timeframe_data[full_symbol][interval] = {"is_eth": is_eth}
             self.resort_timeframes(full_symbol)
             threading.Thread(target=self.__init_cache_data).start()
             return True
+
     def __init_cache_data(self):
         with self._lock:
-            for full_symbol,items in self.timeframe_data.items():
-                for interval,info in items.items():
-                    is_eth=info["is_eth"]
-                    if "df"  in info:
+            for full_symbol, items in self.timeframe_data.items():
+                for interval, info in items.items():
+                    is_eth = info["is_eth"]
+                    if "df" in info:
                         continue
                     try:
-                        obj=self.latest_symbol_charting_manager.symbol_charting_list[full_symbol][(interval, is_eth)]
-                        if obj.df is not None and len(obj.df)>0:
+                        obj = self.latest_symbol_charting_manager.symbol_charting_list[full_symbol][(interval, is_eth)]
+                        if obj.df is not None and len(obj.df) > 0:
                             self.receive_ohlc_data(obj.df.clone())
                     except Exception as e:
 
                         pass
 
-
-
-
         pass
+
     def __is_multi_symbol_multi_timeframe_align(self) -> bool:
         """
         Implements a global time alignment check.
@@ -128,10 +131,11 @@ class LatestOhlcMultiTimeframeAlignment:
         if len(set(all_datetimes)) > 1:
             return False
         # 4. Check 3: Prevent pushing duplicate data for the same time point
-        if self.__last_push_datatime and all_datetimes[0]==self.__last_push_datatime:
+        if self.__last_push_datatime and all_datetimes[0] == self.__last_push_datatime:
             return False
         # All checks passed, global alignment is complete
         return True
+
     def __get_pushed_data(self) -> Dict[str, List[str | list | pl.DataFrame | pd.DataFrame]] | None:
         with self._lock:
             # First, check if all data is aligned and ready
@@ -156,29 +160,54 @@ class LatestOhlcMultiTimeframeAlignment:
 
             return result
 
-    def receive_ohlc_data(self,df:pl.DataFrame):
-        full_symbol=get_full_symbol(df)
-        interval=df["interval"][0]
-        interval=interval.upper()
-        last_close_datetime=df["close_datetime"][-1]
-        is_updated=False
 
+    def receive_ohlc_data(self, df: pl.DataFrame):
+        full_symbol = get_full_symbol(df)
+        interval = df["interval"][0]
+        interval = interval.upper()
+        last_close_datetime = df["close_datetime"][-1]
+        is_updated = False
 
         with self._lock:
             try:
-                info=self.timeframe_data[full_symbol][interval]
-                info["df"]=df
-                info["last_close_datetime"]=last_close_datetime
-                is_updated=True
+                info = self.timeframe_data[full_symbol][interval]
+                info["df"] = df
+                info["last_close_datetime"] = last_close_datetime
+                is_updated = True
             except KeyError:
                 pass
-
-
 
         if not is_updated:
             return
 
-        push_data=self.__get_pushed_data()
-        if not push_data :
+        push_data = self.__get_pushed_data()
+        if not push_data:
             return
-        self.multi_timeframe_callback(self.name,push_data)
+        self.multi_timeframe_callback(name=self.name, data=push_data, original_name=self.original_name)
+        self._trade_middleware_publish(push_data)
+
+    def _trade_middleware_publish(self, push_data: dict):
+        new_push_data = {}
+        for full_symbol, data_list in push_data.items():
+            converted_data_list = []
+
+            for data in data_list:
+                if not isinstance(data, str | dict | list):
+                    converted_data = to_format_data(data, ChartDataFormat.CSV)
+                    converted_data_list.append(converted_data)
+                else:
+                    converted_data_list.append(data)
+
+            new_push_data[full_symbol] = converted_data_list
+
+        result = {
+            "name": self.name,
+            "original_name": self.original_name,
+            "data": new_push_data
+
+        }
+
+        handle_msg = WsUnifiedResponse(message_type="multi_symbol_multi_timeframe",
+                                       result=result).model_dump_json()
+        async_publisher_instance.send_topic("on_multi_symbol_multi_timeframe", result)
+        async_publisher_instance.send_topic("on_handle_msg", handle_msg)
