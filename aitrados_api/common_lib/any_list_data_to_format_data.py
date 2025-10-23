@@ -4,8 +4,7 @@ import io
 import pandas as pd
 import polars as pl
 
-from aitrados_api.common_lib.response_format import UnifiedResponse, ErrorResponse, get_standard_response, \
-    WsUnifiedResponse, WsErrorResponse
+from aitrados_api.common_lib.response_format import UnifiedResponse, ErrorResponse, get_standard_response
 
 
 class AnyToFormat:
@@ -13,13 +12,14 @@ class AnyToFormat:
     PANDAS = "pandas"
     POLARS = "polars"
     LIST = "list"
+
     @classmethod
     def get_array(cls):
         return [cls.CSV, cls.PANDAS, cls.POLARS, cls.LIST]
+
     @classmethod
     def get_serialized_array(cls):
         return [cls.CSV, cls.LIST]
-
 
 
 class AnyListDataToFormatData:
@@ -27,8 +27,13 @@ class AnyListDataToFormatData:
                  rename_column_name_mapping: dict = None,
                  filter_column_names: List[str] = None,
                  limit: int = None):
+        """
 
-
+        :param any_list_data:
+        :param rename_column_name_mapping:  eg. rename interval to timeframe:{"interval": "timeframe"}
+        :param filter_column_names: like [ "timeframe","open", "high", "low", "close", "volume"]
+        :param limit:
+        """
 
         self.any_list_data = any_list_data
         self.rename_column_name_mapping = rename_column_name_mapping or {}
@@ -39,9 +44,6 @@ class AnyListDataToFormatData:
         self._processed_data = None
         self._is_polars_native = False
         self._is_empty = False
-
-
-
 
         self._init_data()
 
@@ -66,7 +68,6 @@ class AnyListDataToFormatData:
             else:
                 raise ValueError(f"Unsupported data type: {type(self.any_list_data)}")
 
-
             self._check_empty()
 
         except Exception as e:
@@ -81,15 +82,29 @@ class AnyListDataToFormatData:
             if self._pandas_df is None or len(self._pandas_df) == 0:
                 self._is_empty = True
 
+    def _get_processed_filter_columns(self, df_columns):
+        if not self.filter_column_names:
+            return []
+
+        post_rename_filter_names = [self.rename_column_name_mapping.get(col, col) for col in self.filter_column_names]
+
+        unique_cols = list(dict.fromkeys(post_rename_filter_names))
+
+        available_columns = [col for col in unique_cols if col in df_columns]
+
+        return available_columns
+
     def _apply_processing(self):
         if self._pandas_df is None:
             return
+        # rename_column_name_mapping:  like {"interval": "timeframe"}
+        # filter_column_names: like [ "interval","open", "high", "low", "close", "volume"]
 
         if self.rename_column_name_mapping:
             self._pandas_df = self._pandas_df.rename(columns=self.rename_column_name_mapping)
 
         if self.filter_column_names:
-            available_columns = [col for col in self.filter_column_names if col in self._pandas_df.columns]
+            available_columns = self._get_processed_filter_columns(self._pandas_df.columns)
             if available_columns:
                 self._pandas_df = self._pandas_df[available_columns]
 
@@ -105,7 +120,7 @@ class AnyListDataToFormatData:
                 self._polars_df = self._polars_df.rename(self.rename_column_name_mapping)
 
             if self.filter_column_names:
-                available_columns = [col for col in self.filter_column_names if col in self._polars_df.columns]
+                available_columns = self._get_processed_filter_columns(self._polars_df.columns)
                 if available_columns:
                     self._polars_df = self._polars_df.select(available_columns)
 
@@ -276,12 +291,13 @@ class ApiListResultToFormatData:
             return result
         return self.any_list_data_to_format_data.get_list()
 
+
 class ApiListResultToFormatData2(ApiListResultToFormatData):
     def __init__(self, data: dict, rename_column_name_mapping: dict = None,
                  filter_column_names: List[str] = None, limit=None):
 
-        if data["code"]==200:
-            api_result=UnifiedResponse(**data)
+        if data["code"] == 200:
+            api_result = UnifiedResponse(**data)
         else:
             api_result = ErrorResponse(**data)
         super().__init__(api_result=api_result,
@@ -291,11 +307,11 @@ class ApiListResultToFormatData2(ApiListResultToFormatData):
                          )
 
 
-def any_data_to_format_data( data: any,
-        rename_column_name_mapping: dict = None,
-        filter_column_names: List[str] = None,
-        limit: int = None,
-        to_format: str = "polars"):
+def any_data_to_format_data(data: any,
+                            rename_column_name_mapping: dict = None,
+                            filter_column_names: List[str] = None,
+                            limit: int = None,
+                            to_format: str = "polars"):
     if to_format not in AnyToFormat.get_array():
         to_format = "polars"
 
@@ -307,7 +323,8 @@ def any_data_to_format_data( data: any,
             limit=limit
         )
         return converter.get_data(to_format)
-    if isinstance(data,list | pl.DataFrame | pd.DataFrame):
+
+    if isinstance(data, list | pl.DataFrame | pd.DataFrame):
         return abc_to()
 
     if isinstance(data, str):
@@ -316,20 +333,14 @@ def any_data_to_format_data( data: any,
         except json.JSONDecodeError as e:
             return abc_to()
     if "code" in data and "status" in data:
-        response=get_standard_response(data)
-        if response.code!=200:
+        response = get_standard_response(data)
+        if response.code != 200:
             raise ValueError(f"{response}")
-        if isinstance(response.result,dict) and "data" in response.result:
-            data=response.result['data']
+        if isinstance(response.result, dict) and "data" in response.result:
+            data = response.result['data']
         else:
             data = response.result
     return abc_to()
-
-
-
-
-
-
 
 
 def deserialize_multi_symbol_multi_timeframe_data(
@@ -378,16 +389,14 @@ def deserialize_multi_symbol_multi_timeframe_data(
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to parse JSON message: {e}")
 
-
     if "code" in data and "status" in data:
-        response=get_standard_response(data)
-        if response.code!=200:
+        response = get_standard_response(data)
+        if response.code != 200:
             raise ValueError(f"Failed to parse JSON message: {response}")
-        if isinstance(response.result,dict) and "data" in response.result:
-            data=response.result['data']
+        if isinstance(response.result, dict) and "data" in response.result:
+            data = response.result['data']
         else:
             data = response.result
-
 
     # Process each symbol's data
     for full_symbol, data_list in data.items():

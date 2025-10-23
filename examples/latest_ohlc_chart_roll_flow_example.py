@@ -10,8 +10,9 @@ from aitrados_api import ClientConfig
 from aitrados_api import DatasetClient
 from aitrados_api import WebSocketClient
 from aitrados_api import LatestOhlcChartFlowManager
+from aitrados_api.common_lib.common import load_env_file
 from aitrados_api.common_lib.contant import IntervalName
-
+#load_env_file(".env", override=True)
 api_config = ClientConfig(
     secret_key=os.getenv("AITRADOS_SECRET_KEY", "YOUR_SECRET_KEY"),
     debug=True

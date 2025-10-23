@@ -1,7 +1,9 @@
 import asyncio
 import os
+import pathlib
 from typing import List
 
+from dotenv import load_dotenv
 from loguru import logger
 
 logger.remove()
@@ -137,3 +139,9 @@ def get_env_value(env_key,default_value=None):
         except:
             pass
     return value
+def load_env_file(env_file,override=False):
+
+    path = pathlib.Path(env_file)
+    if not path.exists():
+        raise FileNotFoundError(f"Environment file not found: {path}")
+    load_dotenv(path,override=override)
