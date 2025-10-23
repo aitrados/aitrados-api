@@ -65,6 +65,27 @@ pip install aitrados-api
 
 ## Usage
 
+### Super easy startup with rpc pubsub
+see https://docs.aitrados.com/en/docs/api/trade_middleware/run_trade_middleware/
+```python
+import time
+from aitrados_api.common_lib.common import load_env_file
+from aitrados_api.common_lib.contant import SubscribeEndpoint, SchemaAsset, IntervalName
+from aitrados_api.common_lib.subscribe_api.websocks_client import WebSocketClient
+from aitrados_api.universal_interface.callback_manage import CallbackManage
+from aitrados_api.universal_interface.aitrados_instance import api_client_instance,ws_client_instance,latest_ohlc_multi_timeframe_manager_instance,latest_symbol_charting_manager_instance
+from aitrados_api.universal_interface.trade_middleware_instance import AitradosTradeMiddlewareInstance
+load_env_file(".env", override=True)
+if __name__ == "__main__":
+    AitradosTradeMiddlewareInstance.run_all()
+    try:
+        # Keep the main thread running
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("closing...")
+```
+
 ### HTTP API - Get Historical Data
 
 You need to use your API key to initialize the `DatasetClient`.
