@@ -2,6 +2,8 @@ import enum
 import json
 import traceback
 from abc import ABC
+from time import sleep
+
 import zmq
 import zmq.asyncio
 from loguru import logger
@@ -98,9 +100,17 @@ class AsyncSubscriberMixin(ABC):
         finally:
             self.socket.close(linger=0)
             self.ctx.term()
-
+    def __send_null_msg(self):
+        """
+        Send an empty message to tell the middleware that I am online.
+        The problem of not receiving the first message has been resolved.
+        """
+        from aitrados_api.trade_middleware.publisher import async_publisher_instance
+        sleep(0.1)
+        async_publisher_instance.send_topic("null", "null")
     def run(self, is_thread=True):
         if not is_thread:
             run_asynchronous_function(self.__run())
         else:
             threading.Thread(target=lambda: run_asynchronous_function(self.__run()), daemon=True).start()
+        threading.Thread(target=self.__send_null_msg, daemon=True).start()

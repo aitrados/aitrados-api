@@ -1,3 +1,5 @@
+import traceback
+
 import json
 from typing import List, Dict, Any
 import io
@@ -148,6 +150,44 @@ class AnyListDataToFormatData:
                 return None
         return self._pandas_df
 
+    @classmethod
+    def _get_formatted_float_column_df(self, df: pd.DataFrame | pl.DataFrame):
+
+        if isinstance(df, pl.DataFrame):
+
+            float_columns = [
+                col for col in df.columns
+                if df[col].dtype in [pl.Float32, pl.Float64]
+            ]
+
+            if not float_columns:
+                return df
+
+            formatted_df = df.with_columns([
+                pl.when(pl.col(col).abs() < 10)
+                .then(pl.col(col).round(4))
+                .otherwise(pl.col(col).round(2))
+                .alias(col)
+                for col in float_columns
+            ])
+            return formatted_df
+
+        elif isinstance(df, pd.DataFrame):
+
+            formatted_df = df.copy()
+
+            float_columns = formatted_df.select_dtypes(include=['float32', 'float64']).columns
+
+            for col in float_columns:
+                mask = formatted_df[col].abs() < 10
+                formatted_df.loc[mask, col] = formatted_df.loc[mask, col].round(4)
+                formatted_df.loc[~mask, col] = formatted_df.loc[~mask, col].round(2)
+
+            return formatted_df
+
+        else:
+            raise ValueError(f"Unsupported DataFrame type: {type(df)}")
+
     def get_csv(self) -> None | str:
         # If the data is empty, return None directly
         if self._is_empty:
@@ -155,15 +195,18 @@ class AnyListDataToFormatData:
 
         if self._is_polars_native and self._polars_df is not None:
             try:
-                return self._polars_df.write_csv()
+                temp_df = self._get_formatted_float_column_df(self._polars_df)
+                return temp_df.write_csv()
             except Exception:
+
                 return None
 
         if self._pandas_df is None or self._pandas_df.empty:
             return None
 
         try:
-            return self._pandas_df.to_csv(index=False)
+            temp_df = self._get_formatted_float_column_df(self._pandas_df)
+            return temp_df.to_csv(index=False)
         except Exception:
             return None
 
