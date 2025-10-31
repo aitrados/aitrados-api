@@ -139,9 +139,26 @@ def get_env_value(env_key,default_value=None):
         except:
             pass
     return value
-def load_env_file(env_file,override=False):
+def load_env_file(file=None,override=False):
 
-    path = pathlib.Path(env_file)
-    if not path.exists():
-        raise FileNotFoundError(f"Environment file not found: {path}")
-    load_dotenv(path,override=override)
+    env_path=None
+    if file:
+        env_path = pathlib.Path(file)
+        if not env_path.exists():
+            raise FileNotFoundError(f"Environment file not found: {env_path}")
+    else:
+        possible_paths = [
+            pathlib.Path.cwd() / '.env',
+            pathlib.Path.cwd() / '../.env',
+            pathlib.Path.cwd() / '../../.env',
+            pathlib.Path.cwd() / '../../../.env',
+        ]
+        for path in possible_paths:
+            if path.exists():
+                env_path = path
+                break
+
+        if not env_path:
+            raise FileNotFoundError(f"Environment file not found in common paths: {possible_paths}\nPlease Input file parameter")
+
+    load_dotenv(env_path,override=override)

@@ -11,7 +11,7 @@ from aitrados_api.universal_interface.trade_middleware_instance import AitradosT
 
 #os.environ["DEBUG"]="true"
 #os.environ["AITRADOS_SECRET_KEY"]="YOUR_SECRET_KEY"
-#load_env_file(".env", override=True)
+load_env_file(file=None, override=True)
 """
 aitrados middleware features
 1. Solves communication between modules, processes, and programs. Enables functional decoupling of complex trading systems. For example: llm-->quantitative strategy-->llm-->emotion management-->capital management-->llm complex circular calculation strategy

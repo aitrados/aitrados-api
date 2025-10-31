@@ -1,4 +1,4 @@
 #console out information
 DEBUG=1
-# FREE GAIN SECRET KEY:https://www.aitrados.com/
+# FREE GAIN SECRET KEY:https://www.aitrados.com/,dataset is free currently
 AITRADOS_SECRET_KEY=YOUR_SECRET_KEY

@@ -2,7 +2,7 @@ import os
 from aitrados_api import *
 from aitrados_api.common_lib.common import load_env_file
 
-#load_env_file(".env", override=True)
+load_env_file(file=None,override=True)
 
 config = ClientConfig(
     secret_key=os.getenv("AITRADOS_SECRET_KEY","YOUR_SECRET_KEY"),

@@ -8,7 +8,7 @@ from aitrados_api.common_lib.common import logger, load_env_file
 from aitrados_api import SubscribeEndpoint
 from aitrados_api import WebSocketClient
 
-#load_env_file(".env", override=True)
+load_env_file(file=None,override=True)
 
 def error_handle_msg(client: WebSocketClient, message):
     # print("Received message:", message)

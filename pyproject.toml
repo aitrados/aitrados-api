@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 # The name users will use to install your package via pip.
 name = "aitrados-api"
 # The initial version of your package. You must increment this for every new release.
-version = "0.1.93"
+version = "0.1.95"
 
 # --- Recommended Fields ---
 authors = [
@@ -56,7 +56,8 @@ dependencies = [
     "polars",
     "pyzmq",
     "pyarrow",
-    "python-dotenv"
+    "python-dotenv",
+    "aiofiles"
 ]
 
 # --- Project URLs ---

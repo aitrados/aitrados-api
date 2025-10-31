@@ -1,0 +1,10 @@
+loguru
+websockets
+httpx
+tenacity
+pydantic
+pandas
+polars
+pyzmq
+pyarrow
+python-dotenv

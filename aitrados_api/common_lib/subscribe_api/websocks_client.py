@@ -174,8 +174,8 @@ class WebSocketClient(WebSocketClientMixin):
         if secret_key:
             self.secret_key=secret_key
         if self.secret_key == "YOUR_SECRET_KEY":
-            logger.error("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY")
-            raise ValueError("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY")
+            logger.error("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY Or add to .env")
+            raise ValueError("Please set your actual API key instead of the placeholder YOUR_SECRET_KEY.export AITRADOS_SECRET_KEY=YOUR-SECRET_KEY Or add to .env")
         from aitrados_api.trade_middleware_service.trade_middleware_service_instance import AitradosApiServiceInstance
         AitradosApiServiceInstance.ws_client = self
 

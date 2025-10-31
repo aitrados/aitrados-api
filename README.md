@@ -62,6 +62,14 @@ You can install this library using pip:
 ```bash
 pip install aitrados-api
 ```
+### From source
+```bash
+git clone https://github.com/aitrados/aitrados-api.git
+cd aitrados-api
+pip install -r requirements.txt
+#pip install -e .
+```
+
 
 ## Usage
 

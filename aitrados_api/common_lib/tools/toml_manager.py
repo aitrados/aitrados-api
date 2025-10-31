@@ -1,9 +1,23 @@
-import tomllib
 from pathlib import Path
-
 from loguru import logger
 import os
 from aitrados_api.common_lib.utils import get_value_by_dict_path
+import sys
+try:
+    import tomllib
+except ImportError:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        print(f"⚠️ Current Python version ({sys.version.split()[0]}) does not have 'tomllib' built-in.")
+        print("\n❌ ERROR: Neither 'tomllib' nor 'tomli' library could be found.")
+        print("Please install the 'tomli' library to proceed by running:")
+        print(">>> pip install tomli")
+
+
+
+
+
 
 
 class TomlManager:
@@ -27,6 +41,8 @@ class TomlManager:
             config_path_ = Path(file)
             if config_path_.exists():
                 config_path=config_path_
+            else:
+                raise FileNotFoundError(f"toml file not found: {config_path_}")
         else:
             possible_paths = [
                 Path.cwd() / 'config.toml',
@@ -38,14 +54,15 @@ class TomlManager:
                 if path.exists():
                     config_path = path
                     break
-        if not  config_path:
-            logger.warning("No found any config.toml")
-            return {}
+            if not  config_path:
+                logger.warning(f"No found any config.toml in common path {possible_paths}\nPlease Input file parameter")
+                return {}
 
 
         try:
             with open(config_path, 'rb') as f:
-                cls.c = tomllib.load(f)
+                if data:=tomllib.load(f):
+                    cls.c.update(data)
             return cls.c
         except Exception as e:
             logger.warning(f"Configuration file format error ({config_path}): {e}")
