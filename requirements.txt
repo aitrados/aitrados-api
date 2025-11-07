@@ -8,3 +8,4 @@ polars
 pyzmq
 pyarrow
 python-dotenv
+tornado>=6.5.2
