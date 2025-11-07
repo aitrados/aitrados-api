@@ -34,19 +34,19 @@ class AsyncBackendResponseMixin(ABC):
 
         self.socket.connect(addr)
 
-        # 向路由器注册自己
+        # Register yourself with the router
         await self.register_to_router()
 
-        # 启动心跳和消息处理
+        # Start heartbeat and message processing
         asyncio.create_task(self.send_heartbeat())
         await self.handle_requests()
 
 
     async def register_to_router(self):
-        """向路由器注册服务"""
+        """Register service with router"""
 
         await self.socket.send_multipart([
-            b"",  # 添加空帧分隔符
+            b"",  # Add empty frame separator
             b"REGISTER",
             self.backend_identity
         ])
@@ -55,10 +55,10 @@ class AsyncBackendResponseMixin(ABC):
 
 
     async def send_heartbeat(self):
-        """定期发送心跳"""
+        """Send heartbeats regularly"""
 
         while True:
-            await asyncio.sleep(5)  # 每5秒发送心跳
+            await asyncio.sleep(5)  # Send heartbeat every 5 seconds
             try:
                 await self.socket.send_multipart([
                     b"",
@@ -76,7 +76,7 @@ class AsyncBackendResponseMixin(ABC):
                 if len(msg) >= 5:
                     empty, client_id, backend_name, function_name, params = msg[:5]
 
-                    # 处理请求
+                    # Processing requests
                     response = await self.process_request(
                         function_name.decode('utf-8'),
                         params.decode('utf-8'),
@@ -86,7 +86,7 @@ class AsyncBackendResponseMixin(ABC):
 
                     # send response：[empty, client_id, backend_name, function_name, response]
                     await self.socket.send_multipart([
-                        b"",  # 空帧
+                        b"",  # empty frame
                         client_id,
                         backend_name,
                         function_name,

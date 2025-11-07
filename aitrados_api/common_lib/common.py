@@ -6,6 +6,8 @@ from typing import List
 from dotenv import load_dotenv
 from loguru import logger
 
+from aitrados_api.common_lib.tools.toml_manager import TomlManager
+
 logger.remove()
 logger.add(
     sink=lambda message: print(message, end=""),
@@ -162,3 +164,8 @@ def load_env_file(file=None,override=False):
             raise FileNotFoundError(f"Environment file not found in common paths: {possible_paths}\nPlease Input file parameter")
 
     load_dotenv(env_path,override=override)
+def load_global_configs(env_file =None, toml_file=None):
+    if not os.getenv('AITRADOS_SECRET_KEY'):
+        load_env_file(file=env_file,override=True)
+    if not TomlManager.c:
+        TomlManager.load_toml_file(file=toml_file)

@@ -6,7 +6,7 @@ from threading import RLock
 import zmq
 import zmq.asyncio
 from aitrados_api.common_lib.common import run_asynchronous_function, is_debug
-from aitrados_api.common_lib.response_format import  ErrorResponse
+from aitrados_api.common_lib.response_format import ErrorResponse, UnifiedResponse
 from loguru import logger
 from typing import Dict
 
@@ -72,6 +72,15 @@ class AsyncRPCIntelligentRouter:
             if self.backend in events:
                 await self._handle_backend_message()
 
+
+    def get_all_online_backend_services(self):
+        backend_identities=[]
+        if self.tag_to_identity:
+            backend_identities =list(self.tag_to_identity.keys())
+        return UnifiedResponse(result=backend_identities).model_dump_json()
+
+
+
     async def _handle_frontend_request(self):
         msg = await self.frontend.recv_multipart()
         if len(msg) < 5:
@@ -79,7 +88,13 @@ class AsyncRPCIntelligentRouter:
             return
 
         client_id, empty, backend_identity, function_name, params = msg[:5]
+        if function_name==b"get_all_online_backend_services":
+            data=self.get_all_online_backend_services()
+            await self.frontend.send_multipart([client_id, b"", backend_identity, function_name, data.encode()])
+
+
         backend_identity_str = backend_identity.decode()
+
 
         target_id = self.tag_to_identity.get(backend_identity_str)
 
@@ -151,7 +166,7 @@ class AsyncRPCIntelligentRouter:
                     with self._lock:
                         self.tag_to_identity.pop(tag, None)
                         self.last_seen.pop(tag, None)
-                        logger.warning(f"[Router] 后端掉线已剔除: {tag}")
+                        logger.warning(f"[Router] Backend disconnection has been removed.: {tag}")
             await asyncio.sleep(self.HEARTBEAT_INTERVAL)
 
     async def stop(self):

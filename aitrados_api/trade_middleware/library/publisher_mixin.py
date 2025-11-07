@@ -1,4 +1,5 @@
 import asyncio
+import enum
 import json
 import threading
 from asyncio import CancelledError
@@ -31,21 +32,26 @@ class AsyncPublisher:
             set_pubsub_heartbeat_options(self.socket)
             self.socket.connect(addr)
             #print("public addr",self.addr)
-    def send_topic(self,topic:bytes|str,content:bytes|str):
+    def send_topic(self,topic:bytes|str|enum.Enum,content:bytes|str|dict|list):
         run_asynchronous_function(self.a_send_topic(topic,content))
 
 
 
-    async def a_send_topic(self,topic:bytes|str,content:bytes|str|dict|list):
+    async def a_send_topic(self,topic:bytes|str|enum.Enum,content:bytes|str|dict|list):
         if not self.socket or not self.ctx:
             await self._instance()
 
         #logger.info(f"[Publisher] {self.addr}  {topic}  ")
-        if isinstance(topic,str):
+        if isinstance(topic, enum.Enum):
+            topic = topic.value
+        elif isinstance(topic,str):
             topic=topic.encode()
-        if isinstance(content,str):
-            content=content.encode()
-        if isinstance(content,dict|list):
+
+
+
+        if isinstance(content, str):
+            content = content.encode()
+        elif isinstance(content,dict|list):
             try:
 
                 content=json.dumps(content,default=str).encode()

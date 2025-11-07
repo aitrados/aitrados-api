@@ -56,11 +56,8 @@ class CustomRpcBackendService(BackendService):
 
 
 def run_service():
-
     service = AsyncBackendResponse(CustomRpcBackendService())
     run_asynchronous_function(service.init())
-
-
 def test_request():
     print("test req")
     result = FrontendRequest.call_sync(
